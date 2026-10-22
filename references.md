@@ -1,4 +1,4 @@
-Proposed title: Application of Transposition Ciphers In Anti-Scraping Image Protection System Using Tile Transposition
+Proposed title: Application Of Transposition Ciphers In Anti-Scraping Image Protection System Using Tile Transposition
 
 
 # References

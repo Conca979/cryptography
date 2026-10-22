@@ -1,0 +1,41 @@
+Application Of Transposition Ciphers In Anti-Scraping Image Protection System Using Tile Transposition
+
+I. What is Transposition Ciphers?
+ -> Read <references.md>
+
+II. What is image Scraping?
+ -> the automated process of extracting and downloading image files (such as JPEGs, PNGs, or SVGs) and their associated metadata from websites using scripts, bots, or specialized software rather than saving them manually one by one.
+
+ -> How It Works
+
+    • Parse HTML: A script reads the source code of a target webpage to locate image tags (like <img>) or background styling attributes.
+    • Resolve URLs: It converts relative paths into full, direct image web addresses (URLs).
+    • Fetch and Save: The tool sends HTTP requests to download the actual image binaries and stores them in local folders or cloud databases.
+    • Handle Dynamic Content: Advanced scrapers use headless browsers (like Selenium or Puppeteer) to simulate scrolling and load JavaScript-heavy galleries.
+
+III. What does Tile Transposition do to the image?
+ -> Take a look at the <docs/images/transpositioned-image.png>
+
+IV. What do we defend on the report?
+-> 1. What are we preventing
+    a. Direct HTTP / CDN Scraping (curl, httpx)
+        -> High effectiveness of Tile Transposition: Raw payload is visually unusable.
+        -> Manually time wasting (primary bottleneck) for Attacker: Must reverse-engineer PRNG/key logic (1) or run CV jigsaw solvers (2).
+    b. Basic Asset Extraction (DOM / Network Inspection)
+        -> Preventing casual users extracting the raw image URL from the DOM or browser Network tab download the scrambled source payload rather than the reconstructed viewport output. (3)
+    c. Unauthorized Visual Hotlinking
+        -> Third-party sites embedding the author's raw media URLs lack the session-bound permutation key and client-side reconstruction logic, causing the hotlinked image to render as disjointed tiles. (4)
+        -> When a site uses Tile Transposition, Hotlinking is broken completely visually.
+            -> Visiter on legimate-site.com: Loads Page -> run Legit JavaScript -> Gets Key -> Render Clean Image on Canvas
+            -> Visiter on pirate-website.com: Load <img> tag directly -> no custom JavaScript -> no decryption key -> Display scrambled image like the jigsaw puzzle! 
+    d. 
+
+
+(1): PRNG stands for Pseudo-Random number Generator: An algorithm that generates a determistic sequence of "random-looking" numbers starting from a single value called a seed
+(2): CV (Computer Vision) jigsaw solvers: Computer Vision algorithm designed to reassemble a complete image from a collection of scrambled, unordered image tiles without knowing the permutation key
+ -> neural networks can understand natural image semantics (e.g., "sky belongs on top of trees", "wheels belong below car doors") to solve scrambled tiles.
+
+(3)
+
+(4) Hotlinking: happens when an anauthorized third-party websites displays your images on their website using your direct file URLs
+ -> The problem: The pirate site does not store or host the image. Every time someone visites their page, he visitor's browser downloads teh file directly from your server/CDN (Content Delivery/Distribution Network on CDN endpoint). The pirate steals your content, while you pay the clound storage and hosting bills.
