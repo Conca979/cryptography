@@ -1,7 +1,7 @@
 Application Of Transposition Ciphers In Anti-Scraping Image Protection System Using Tile Transposition
 
 I. What is Transposition Ciphers?
- -> Read <references.md>
+ -> Read <docs/references.md>
 
 II. What is image Scraping?
  -> the automated process of extracting and downloading image files (such as JPEGs, PNGs, or SVGs) and their associated metadata from websites using scripts, bots, or specialized software rather than saving them manually one by one.

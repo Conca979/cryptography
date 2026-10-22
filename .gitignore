@@ -1,7 +1,8 @@
+# Experiments
 index.html
 figures/
-docs/
 CS_crypto.*
+images/
 
 # Virtual environments
 .venv/
