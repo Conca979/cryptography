@@ -10,7 +10,7 @@
 
 # a^b mod c: base^exponential mod Modulus
 
-a = 825
+a = 856
 b = 25
 c = 7
 
