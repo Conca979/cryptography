@@ -2,3 +2,26 @@ index.html
 figures/
 docs/
 CS_crypto.*
+
+# Virtual environments
+.venv/
+env/
+venv/
+
+# Python bytecode & caches
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Distribution & packaging
+build/
+dist/
+*.egg-info/
+
+# Pytest / coverage caches
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Environment files / credentials
+.env
