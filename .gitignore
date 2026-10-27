@@ -2,7 +2,6 @@
 index.html
 figures/
 CS_crypto.*
-images/
 
 # Virtual environments
 .venv/

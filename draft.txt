@@ -28,7 +28,23 @@ IV. What do we defend on the report?
         -> When a site uses Tile Transposition, Hotlinking is broken completely visually.
             -> Visiter on legimate-site.com: Loads Page -> run Legit JavaScript -> Gets Key -> Render Clean Image on Canvas
             -> Visiter on pirate-website.com: Load <img> tag directly -> no custom JavaScript -> no decryption key -> Display scrambled image like the jigsaw puzzle! 
-    d. 
+    d. Crawlers mass-harvesting proprietary lead to Zero-Cost Mass Piracy at Scale
+    -> The Threat: Pirate syndicates running automated scrapers across 50,000 chapters overnight at zero compute cost.
+    -> While a human can screenshot 1 page, mass-pirating an entire library requires either reverse-engineering the PRNG logic or running GPU-heavy computer vision solvers, breaking the pirate's business model.
+
+
+----- Some keywords ----------
+- The End-Point / Analog Dilemma:
+    -> A human viewing the screen can always take a screenshot (PrtScn) or save an active canvas snapshot.
+    -> Defense: The system is designed against bulk automated network scrapers, not an individual user taking one screenshot.
+
+- The Trade-Off in Compression Penalty:
+    -> Modern image codecs (JPEG, WebP) rely on smooth pixel color gradients to compress data. Shuffling tiles introduces artificial high-contrast sharp edges at every tile border.
+    -> Result: Scrambled images can be 15% to 25% larger in file size than original images at the same visual quality.
+
+- Scraping Again Tile Transposition:
+    -> Raist the cost to 
+
 
 
 (1): PRNG stands for Pseudo-Random number Generator: An algorithm that generates a determistic sequence of "random-looking" numbers starting from a single value called a seed
