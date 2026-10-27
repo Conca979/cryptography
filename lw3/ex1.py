@@ -3,4 +3,10 @@
 
 # let q, p large primes
 
-msg = 'flow'
+msg = 'flow'[::-1]
+
+result = 0
+for i in range(len(msg)):
+  result += ord(msg[i])*(256**i)
+
+print(result)

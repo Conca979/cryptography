@@ -25,3 +25,6 @@ htmlcov/
 
 # Environment files / credentials
 .env
+
+# Agent instructions & notes
+AGENTS.md
