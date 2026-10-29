@@ -7,7 +7,11 @@ authors = [
     { name = "Duong", email = "tn7956666@gmail.com" }
 ]
 requires-python = ">=3.10"
-dependencies = []
+dependencies = [
+    "ipykernel>=7.3.0",
+    "numpy>=2.2.6",
+    "pillow>=12.3.0",
+]
 
 [project.scripts]
 cryptography = "cryptography:main"

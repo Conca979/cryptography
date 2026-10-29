@@ -3,6 +3,5 @@ Proposed title: Application Of Transposition Ciphers In Anti-Scraping Image Prot
 
 # References
 
-2. https://www.researchgate.net/publication/336789203_Modified_Transposition_Cipher_Algorithm_for_Images_Encryption
-3. https://www.geeksforgeeks.org/computer-networks/transposition-cipher-techniques-in-cryptography/
-4. https://en.wikipedia.org/wiki/Transposition_cipher
+1. https://www.semanticscholar.org/paper/Arnold%E2%80%99s-Cat-Map-Algorithm-in-Digital-Image-Hariyanto-Rahim/d4957150dda1dc4b55187b9b0d3577a48af2e73d
+2. https://ieeexplore.ieee.org/stamp/stamp.jsp?tp=&arnumber=10909497
