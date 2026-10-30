@@ -32,6 +32,13 @@ IV. What do we defend on the report?
     -> The Threat: Pirate syndicates running automated scrapers across 50,000 chapters overnight at zero compute cost.
     -> While a human can screenshot 1 page, mass-pirating an entire library requires either reverse-engineering the PRNG logic or running GPU-heavy computer vision solvers, breaking the pirate's business model.
 
+Forcus on III.B (source of truth)
+SRT: special rectangular transformation
+SRT+: special rectangular transformation with a third integer parameter, k ≥ 0
+
+Forcus on IV.A
+GRT: GENERALIZED RECTANGULAR TRANSFORMATION
+
 
 ----- Some keywords ----------
 - The End-Point / Analog Dilemma:
@@ -42,8 +49,6 @@ IV. What do we defend on the report?
     -> Modern image codecs (JPEG, WebP) rely on smooth pixel color gradients to compress data. Shuffling tiles introduces artificial high-contrast sharp edges at every tile border.
     -> Result: Scrambled images can be 15% to 25% larger in file size than original images at the same visual quality.
 
-- Scraping Again Tile Transposition:
-    -> Raist the cost to 
 
 
 
@@ -55,3 +60,5 @@ IV. What do we defend on the report?
 
 (4) Hotlinking: happens when an anauthorized third-party websites displays your images on their website using your direct file URLs
  -> The problem: The pirate site does not store or host the image. Every time someone visites their page, he visitor's browser downloads teh file directly from your server/CDN (Content Delivery/Distribution Network on CDN endpoint). The pirate steals your content, while you pay the clound storage and hosting bills.
+
+ 
