@@ -1,3 +1,5 @@
+## This markdown file is converted from hand-written theoretical background and mathematical derivations on GRT and SRT folders
+
 # SRT and GRT — Handwritten Notes
 
 ## Part I: SRT and ISRT (`docs/SRT/1.jpg` – `2.jpg`)

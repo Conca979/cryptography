@@ -30,3 +30,8 @@ htmlcov/
 AGENTS.md
 example.md
 playground/
+*agents/
+benchmark_results.json
+
+TEST*
+validation_harness.html
