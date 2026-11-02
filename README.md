@@ -42,6 +42,7 @@ Technical reports, research notes, slide presentations, and academic paper refer
 #### Presentation Deck (`docs/slides/`)
 - `docs/slides/slides.html`: Standalone modern white slide presentation deck (12 slides) designed for project defense. Includes full keyboard navigation, progress bar, typeset mathematical matrices, and collapsible presenter notes.
 - `docs/slides/slides.css`: Styling rules for the modern white slide deck, providing clean typography, responsive layout, and custom CSS-typeset matrix brackets.
+- `docs/images/visualize.png`: diagram illustrating how our Tile Transposition (GRT) pipeline protects images against zero-cost mass scraping and hotlinking
 
 #### Academic Reference Papers (`docs/papers/`)
 - `docs/papers/A_Novel_Multi-Image_Encryption_Scheme_Using_Generalized_Rectangular_Transform_and_Advanced_5-D_Hyperchaotic_Map.pdf`: Foundational research paper by Lan and Wang (IEEE Access 2025) introducing SRT and GRT.
