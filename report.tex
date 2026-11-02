@@ -1,19 +1,22 @@
-% I.Introduction Ánh Dương, Mai Anh
-% Context
-% Problem statement
-% objective
-% II. Theoretical background TD, Mai Anh
-% Mention SRT, and then we propose GRT 
-% Terminology explanation
-% III. Methonology and application TD, Tạ Huy (*)
-% Workflow
-% Implementation
-% IV. Evaluation and result Minh Đức, Minh Lương (*)
-% Benchmark report
-% V. Conclusion HHuy, MDuc 
-% Limitation
-% Future work
+\documentclass{article}
+\usepackage{graphicx} % Required for inserting images
+\usepackage[top=2.5cm, bottom=2.5cm, left=2.5cm, right=2.5cm]{geometry}
+\title{Application Of Tile Transposition Ciphers In Anti-Scraping Image Protection System}
+\date{}
+\begin{document}
+\maketitle
+\section{Introduction}
+\subsection{Problem Statement}
+Images are widely stored and distributed through websites and Content Delivery Networks (CDNs), making them easily accessible to automated scraping tools at low computational cost. This may facilitate the unauthorized collection and redistribution of images. Meanwhile, existing image-protection methods face a trade-off between security and performance, as pixel-level scrambling can disrupt spatial correlation, leading to an increase in compressed file size. Therefore, websites need to balance image protection, bandwidth costs, and display performance.
 
-% TD giám sát hết các phần
+These challenges motivate the exploration of tile-level image scrambling using the Generalized Rectangular Transform (GRT), which aims to protect image assets while maintaining efficient reconstruction.
 
-% Application Of Transposition Ciphers In Anti-Scraping Image Protection System Using Tile Transposition`'
+\subsection{Objectives}
+\begin{itemize}
+    \item Reproduce and implement GRT-based tile-level image scrambling and inverse reconstruction
+    \item Validate the reversibility of GRT and confirm pixel-perfect image recovery
+    \item Measure computational latency, memory usage and compression overhead to assess its feasibility for web-based image protection
+\end{itemize}
+
+
+\end{document}
