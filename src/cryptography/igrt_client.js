@@ -312,7 +312,9 @@
     c,
     d,
     rm,
-    rn
+    rn,
+    origWidth,
+    origHeight
   ) {
     if (!targetCanvas || typeof targetCanvas.getContext !== "function") {
       throw new TypeError("targetCanvas must be a valid HTMLCanvasElement");
@@ -333,6 +335,10 @@
       );
     }
 
+    const finalWidth = (typeof origWidth === "number" && origWidth > 0 && origWidth <= width) ? origWidth : width;
+    const finalHeight = (typeof origHeight === "number" && origHeight > 0 && origHeight <= height) ? origHeight : height;
+
+    // 1. Canvas is initially sized to full width x height to read the complete scrambled image without clipping
     if (targetCanvas.width !== width) {
       targetCanvas.width = width;
     }
@@ -378,7 +384,19 @@
         rn
       );
 
-      ctx.putImageData(dstImageData, 0, 0);
+      // 2. If original unpadded dimensions are specified and smaller than grid, resize canvas and crop cleanly
+      if (finalWidth !== width || finalHeight !== height) {
+        targetCanvas.width = finalWidth;
+        targetCanvas.height = finalHeight;
+        const finalImageData = ctx.createImageData(finalWidth, finalHeight);
+        const final32 = new Uint32Array(finalImageData.data.buffer);
+        for (let r = 0; r < finalHeight; r++) {
+          final32.set(dst32.subarray(r * width, r * width + finalWidth), r * finalWidth);
+        }
+        ctx.putImageData(finalImageData, 0, 0);
+      } else {
+        ctx.putImageData(dstImageData, 0, 0);
+      }
     } else {
       const tileWidth = (width / M) | 0;
       const tileHeight = (height / N) | 0;
@@ -397,6 +415,12 @@
             tileHeight
           );
         }
+      }
+      if (finalWidth !== width || finalHeight !== height) {
+        const croppedData = ctx.getImageData(0, 0, finalWidth, finalHeight);
+        targetCanvas.width = finalWidth;
+        targetCanvas.height = finalHeight;
+        ctx.putImageData(croppedData, 0, 0);
       }
     }
   }

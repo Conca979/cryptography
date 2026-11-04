@@ -22,8 +22,10 @@ def forward_grt_coordinate(
     y_next = (c * x + d * y + rn) % N
     return x_next, y_next
 
-# Complete decyption Pipline
-def scramble_image_grt(image: Image.Image, M: int, N: int, a: int, b: int, c: int, d: int, rm: int, rn: int) -> Image.Image:
+def scramble_image_grt(
+    image: Image.Image, M: int, N: int, a: int, b: int, c: int, d: int, rm: int, rn: int,
+    auto_pad: bool = False
+) -> Image.Image:
     # Scrambles an image by permuting M x N tiles using forward GRT
     valid, reason = validate_grt_parameters(M, N, a, b, c, d, rm, rn)
     if not valid:
@@ -31,7 +33,11 @@ def scramble_image_grt(image: Image.Image, M: int, N: int, a: int, b: int, c: in
 
     width, height = image.size
     if width % M != 0 or height % N != 0:
-        raise ValueError(f'Image dimensions ({width}, {height}) must be divisible by grid ({M}, {N})')
+        if auto_pad:
+            image, _ = pad_image_to_grid(image, M, N)
+            width, height = image.size
+        else:
+            raise ValueError(f'Image dimensions ({width}, {height}) must be divisible by grid ({M}, {N})')
 
     tile_width = width // M
     tile_height = height // N
@@ -165,3 +171,19 @@ def validate_grt_parameters(
         return (False, 'Violated Lan & Wang Eq (2) Condition 4: expected gcd(d, v) == 1')
 
     return True, 'Valid GRT parameters'
+
+# Image padding helper for arbitrary/prime image dimensions
+def pad_image_to_grid(image: Image.Image, M: int, N: int) -> tuple[Image.Image, tuple[int, int]]:
+    # Pads image using edge replication so dimensions are cleanly divisible by (M, N)
+    orig_w, orig_h = image.size
+    pad_w = (M - (orig_w % M)) % M
+    pad_h = (N - (orig_h % N)) % N
+    if pad_w == 0 and pad_h == 0:
+        return image, (orig_w, orig_h)
+    arr = np.array(image)
+    pad_spec = ((0, pad_h), (0, pad_w)) + (((0, 0),) if arr.ndim == 3 else ())
+    padded_arr = np.pad(arr, pad_spec, mode='edge')
+    padded_img = Image.fromarray(padded_arr, mode=image.mode)
+    if image.mode == 'P' and image.getpalette() is not None:
+        padded_img.putpalette(image.getpalette())
+    return padded_img, (orig_w, orig_h)
