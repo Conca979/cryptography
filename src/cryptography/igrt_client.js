@@ -2,13 +2,7 @@
 (function () {
   "use strict";
 
-  /**
-   * Computes the greatest common divisor of two integers.
-   *
-   * @param {number} a
-   * @param {number} b
-   * @returns {number} Greatest common divisor (>= 0)
-   */
+  // Computes the greatest common divisor of two integers.
   function gcd(a, b) {
     let x = Math.abs(Math.trunc(a));
     let y = Math.abs(Math.trunc(b));
@@ -20,34 +14,14 @@
     return x;
   }
 
-  /**
-   * Robust Euclidean positive modulo operation.
-   * Standard JavaScript `%` operator retains negative signs (e.g. -5 % 3 === -2).
-   * This helper normalizes results into the range [0, m - 1].
-   *
-   * @param {number} n - Dividend
-   * @param {number} m - Positive divisor (modulus)
-   * @returns {number} Canonical residue in [0, m - 1]
-   */
+  //  Positive Euclidean modulo in [0, m - 1].
   function mod(n, m) {
     return ((n % m) + m) % m;
   }
 
-  /**
-   * Computes the modular multiplicative inverse of a modulo m using
-   * the Extended Euclidean Algorithm.
-   *
-   * For the trivial quotient ring Z/1Z (m === 1), returns 0.
-   *
-   * @param {number} a - Integer base
-   * @param {number} m - Positive modulus (>= 1)
-   * @returns {number} Modular inverse in range [0, m - 1]
-   * @throws {RangeError} If gcd(a, m) !== 1 when m > 1
-   */
+  // Modular multiplicative inverse of a modulo m via Extended Euclidean Algorithm.
   function modInverse(a, m) {
-    if (m === 1) {
-      return 0;
-    }
+    if (m === 1) return 0;
 
     let oldR = mod(a, m);
     let r = m;
@@ -74,162 +48,19 @@
     return mod(oldS, m);
   }
 
-  /**
-   * Validates parameters (M, N, a, b, c, d, rm, rn) according to
-   * Lan & Wang (2025) Equations 2 and 10.
-   *
-   * @param {number} M - Grid width (number of tile columns), M >= 1
-   * @param {number} N - Grid height (number of tile rows), N >= 1
-   * @param {number} a - GRT parameter a >= 0
-   * @param {number} b - GRT parameter b >= 0
-   * @param {number} c - GRT parameter c >= 0
-   * @param {number} d - GRT parameter d >= 0
-   * @param {number} rm - Horizontal offset, 0 <= rm < M
-   * @param {number} rn - Vertical offset, 0 <= rn < N
-   * @returns {{ valid: boolean, reason: string }}
-   */
-  function validateGRTParameters(M, N, a, b, c, d, rm, rn) {
-    const params = [
-      ["M", M],
-      ["N", N],
-      ["a", a],
-      ["b", b],
-      ["c", c],
-      ["d", d],
-      ["rm", rm],
-      ["rn", rn],
-    ];
-
-    for (let i = 0; i < params.length; i++) {
-      const [name, val] = params[i];
-      if (!Number.isInteger(val)) {
-        return {
-          valid: false,
-          reason: `Parameter ${name} must be an integer`,
-        };
-      }
-    }
-
-    if (M < 1 || N < 1) {
-      return {
-        valid: false,
-        reason: `Grid dimensions M and N must be >= 1, got M=${M}, N=${N}`,
-      };
-    }
-
-    if (a < 0 || b < 0 || c < 0 || d < 0) {
-      return {
-        valid: false,
-        reason: `Matrix parameters a, b, c, d must be >= 0, got a=${a}, b=${b}, c=${c}, d=${d}`,
-      };
-    }
-
-    if (rm < 0 || rm >= M || rn < 0 || rn >= N) {
-      return {
-        valid: false,
-        reason: `Offset coordinates (rm, rn) must satisfy 0 <= rm < M and 0 <= rn < N, got rm=${rm} (M=${M}), rn=${rn} (N=${N})`,
-      };
-    }
-
-    const p = gcd(M, N);
-    const h = Math.floor(M / p);
-    const v = Math.floor(N / p);
-    const det = a * d - b * c;
-
-    // Condition 1: b % h == 0 or c % v == 0
-    if (mod(b, h) !== 0 && mod(c, v) !== 0) {
-      return {
-        valid: false,
-        reason: `Violated Lan & Wang Eq (2) Condition 1: expected (b % h === 0 || c % v === 0), got b%h=${mod(b, h)}, c%v=${mod(c, v)}`,
-      };
-    }
-
-    // Condition 2: gcd(|G|, p) == 1
-    if (gcd(det, p) !== 1) {
-      return {
-        valid: false,
-        reason: `Violated Lan & Wang Eq (2) Condition 2: expected gcd(|G|, p) === 1, got gcd(${det}, ${p}) = ${gcd(det, p)}`,
-      };
-    }
-
-    // Condition 3: gcd(a, h) == 1
-    if (gcd(a, h) !== 1) {
-      return {
-        valid: false,
-        reason: `Violated Lan & Wang Eq (2) Condition 3: expected gcd(a, h) === 1, got gcd(${a}, ${h}) = ${gcd(a, h)}`,
-      };
-    }
-
-    // Condition 4: gcd(d, v) == 1
-    if (gcd(d, v) !== 1) {
-      return {
-        valid: false,
-        reason: `Violated Lan & Wang Eq (2) Condition 4: expected gcd(d, v) === 1, got gcd(${d}, ${v}) = ${gcd(d, v)}`,
-      };
-    }
-
-    return { valid: true, reason: "Valid GRT parameters" };
-  }
-
-  /**
-   * Computes forward GRT affine coordinate mapping (Lan & Wang 2025, Eq 2 & 10).
-   *
-   * x_{n+1} = (a * x_n + b * y_n + rm) mod M
-   * y_{n+1} = (c * x_n + d * y_n + rn) mod N
-   *
-   * @param {number} x - Original column index [0, M - 1]
-   * @param {number} y - Original row index [0, N - 1]
-   * @param {number} M - Grid width (number of tile columns)
-   * @param {number} N - Grid height (number of tile rows)
-   * @param {number} a - GRT matrix coefficient (0, 0)
-   * @param {number} b - GRT matrix coefficient (0, 1)
-   * @param {number} c - GRT matrix coefficient (1, 0)
-   * @param {number} d - GRT matrix coefficient (1, 1)
-   * @param {number} rm - Horizontal translation offset
-   * @param {number} rn - Vertical translation offset
-   * @returns {[number, number]} Transformed coordinates [x_next, y_next]
-   */
-  function forwardGRTCoordinate(x, y, M, N, a, b, c, d, rm, rn) {
-    if (x < 0 || x >= M || y < 0 || y >= N) {
-      throw new RangeError(
-        `Coordinate (${x}, ${y}) is outside valid grid bounds [0, ${M}) x [0, ${N})`
-      );
-    }
-
-    const xNext = mod(a * x + b * y + rm, M);
-    const yNext = mod(c * x + d * y + rn, N);
-    return [xNext, yNext];
-  }
-
-  /**
-   * Computes inverse GRT coordinate mapping using exact 4-stage IGRT
-   * (Lan & Wang 2025, Eq 12-17).
-   *
-   * @param {number} xp - Scrambled column index [0, M - 1]
-   * @param {number} yp - Scrambled row index [0, N - 1]
-   * @param {number} M - Grid width (number of tile columns)
-   * @param {number} N - Grid height (number of tile rows)
-   * @param {number} a - GRT matrix coefficient (0, 0)
-   * @param {number} b - GRT matrix coefficient (0, 1)
-   * @param {number} c - GRT matrix coefficient (1, 0)
-   * @param {number} d - GRT matrix coefficient (1, 1)
-   * @param {number} rm - Horizontal translation offset
-   * @param {number} rn - Vertical translation offset
-   * @returns {[number, number]} Reconstructed original coordinates [x, y]
-   */
+  //    Precomputes 1D TypedArray Lookup Tables (LUTs) for 4-Stage IGRT decryption
+  //    (Lan & Wang 2025, Eq. 12-17). Hoists all gcd/modInverse/modulo operations
+  //    outside the 2D grid loop.
+  // Scalar inverse GRT coordinate mapping (Decryption, Lan & Wang 2025 Eq. 12-17)
   function inverseGRTCoordinate(xp, yp, M, N, a, b, c, d, rm, rn) {
     if (xp < 0 || xp >= M || yp < 0 || yp >= N) {
-      throw new RangeError(
-        `Coordinate (${xp}, ${yp}) is outside valid grid bounds [0, ${M}) x [0, ${N})`
-      );
+      throw new RangeError('Coordinates out of bounds: (' + xp + ', ' + yp + ') for grid ' + M + 'x' + N);
     }
-
     const p = gcd(M, N);
-    const h = Math.floor(M / p);
-    const v = Math.floor(N / p);
+    const h = (M / p) | 0;
+    const v = (N / p) | 0;
     const det = a * d - b * c;
 
-    // Stage 1: Equilateral inverse mapping modulo p (Lan & Wang 2025, Eq 12)
     let x_p = 0;
     let y_p = 0;
     if (p > 1) {
@@ -240,63 +71,237 @@
       y_p = mod(detInvP * (-c * dx + a * dy), p);
     }
 
-    // Stage 2: Inverse projection mapping (Lan & Wang 2025, Eq 13 & Table 6)
     const deltaX = (xp - rm) - (a * x_p + b * y_p);
     const deltaY = (yp - rn) - (c * x_p + d * y_p);
     const H = h > 1 ? mod(Math.floor(deltaX / p), h) : 0;
     const V = v > 1 ? mod(Math.floor(deltaY / p), v) : 0;
 
-    // Stage 3: Inverse triangular mapping (Lan & Wang 2025, Eq 14, 15, 16)
-    let x_h = 0;
-    let y_v = 0;
-
     const bModH = h > 1 ? mod(b, h) : 0;
     const cModV = v > 1 ? mod(c, v) : 0;
+    const aInvH = h > 1 ? modInverse(a, h) : 0;
+    const dInvV = v > 1 ? modInverse(d, v) : 0;
 
+    let x_h = 0;
+    let y_v = 0;
     if (bModH === 0 && cModV === 0) {
-      // Case 1 (Diagonal system, Eq 14)
-      x_h = h > 1 ? mod(modInverse(a, h) * H, h) : 0;
-      y_v = v > 1 ? mod(modInverse(d, v) * V, v) : 0;
+      x_h = h > 1 ? mod(aInvH * H, h) : 0;
+      y_v = v > 1 ? mod(dInvV * V, v) : 0;
     } else if (bModH === 0 && cModV !== 0) {
-      // Case 2 (Lower triangular system, Eq 15)
-      x_h = h > 1 ? mod(modInverse(a, h) * H, h) : 0;
-      y_v = v > 1 ? mod(modInverse(d, v) * (V - c * x_h), v) : 0;
-    } else if (bModH !== 0 && cModV === 0) {
-      // Case 3 (Upper triangular system, Eq 16)
-      y_v = v > 1 ? mod(modInverse(d, v) * V, v) : 0;
-      x_h = h > 1 ? mod(modInverse(a, h) * (H - b * y_v), h) : 0;
+      x_h = h > 1 ? mod(aInvH * H, h) : 0;
+      y_v = v > 1 ? mod(dInvV * (V - c * x_h), v) : 0;
     } else {
-      throw new Error(
-        `Invalid GRT parameters: violates Condition 1 ((b % h == 0) || (c % v == 0)). Got b%h=${bModH}, c%v=${cModV}`
-      );
+      y_v = v > 1 ? mod(dInvV * V, v) : 0;
+      x_h = h > 1 ? mod(aInvH * (H - b * y_v), h) : 0;
     }
 
-    // Stage 4: CRT assembly / Coordinate reconstruction (Lan & Wang 2025, Eq 17)
     const x = x_p + p * x_h;
     const y = y_p + p * y_v;
-
     return [x, y];
   }
 
-  /**
-   * Descrambles a tiled image using Inverse Generalized Rectangular Transform (IGRT)
-   * and renders the reconstructed image directly onto an HTML5 Canvas.
-   *
-   * For each scrambled tile position (xp, yp), the original coordinate (x, y) is
-   * computed using inverseGRTCoordinate, and the tile is drawn to the target canvas.
-   * Image smoothing is explicitly disabled to guarantee lossless pixel preservation.
-   *
-   * @param {CanvasImageSource} scrambledImageSource - Scrambled image source (HTMLImageElement, HTMLCanvasElement, etc.)
-   * @param {HTMLCanvasElement} targetCanvas - Target canvas element to render reconstructed image
-   * @param {number} M - Grid width (number of tile columns)
-   * @param {number} N - Grid height (number of tile rows)
-   * @param {number} a - GRT matrix coefficient (0, 0)
-   * @param {number} b - GRT matrix coefficient (0, 1)
-   * @param {number} c - GRT matrix coefficient (1, 0)
-   * @param {number} d - GRT matrix coefficient (1, 1)
-   * @param {number} rm - Horizontal translation offset
-   * @param {number} rn - Vertical translation offset
-   */
+  function buildIGRTLookupTables(M, N, a, b, c, d, rm, rn) {
+    const p = gcd(M, N);
+    const h = (M / p) | 0;
+    const v = (N / p) | 0;
+    const det = a * d - b * c;
+
+    const detInvP = p > 1 ? modInverse(det, p) : 0;
+    const aInvH = h > 1 ? modInverse(a, h) : 0;
+    const dInvV = v > 1 ? modInverse(d, v) : 0;
+
+    const bModH = h > 1 ? mod(b, h) : 0;
+    const cModV = v > 1 ? mod(c, v) : 0;
+    if (bModH !== 0 && cModV !== 0) {
+      throw new Error(
+        `Invalid GRT parameters: expected (b % h === 0 || c % v === 0), got b%h=${bModH}, c%v=${cModV}`
+      );
+    }
+    const caseType = bModH === 0 && cModV === 0 ? 1 : bModH === 0 ? 2 : 3;
+
+    // 1D X-axis LUTs (length M)
+    const dx0Arr = new Int32Array(M);
+    const dxDArr = new Int32Array(M);
+    const dxCArr = new Int32Array(M);
+    const dModP = p > 1 ? mod(detInvP * d, p) : 0;
+    const negBModP = p > 1 ? mod(-detInvP * b, p) : 0;
+    const negCModP = p > 1 ? mod(-detInvP * c, p) : 0;
+    const aModP = p > 1 ? mod(detInvP * a, p) : 0;
+
+    for (let xp = 0; xp < M; xp++) {
+      const dx0 = xp - rm;
+      dx0Arr[xp] = dx0;
+      if (p > 1) {
+        const dx = ((dx0 % p) + p) % p;
+        dxDArr[xp] = (dModP * dx) % p;
+        dxCArr[xp] = (negCModP * dx) % p;
+      }
+    }
+
+    // 1D Y-axis LUTs (length N)
+    const dy0Arr = new Int32Array(N);
+    const dyBArr = new Int32Array(N);
+    const dyAArr = new Int32Array(N);
+    for (let yp = 0; yp < N; yp++) {
+      const dy0 = yp - rn;
+      dy0Arr[yp] = dy0;
+      if (p > 1) {
+        const dy = ((dy0 % p) + p) % p;
+        dyBArr[yp] = (negBModP * dy) % p;
+        dyAArr[yp] = (aModP * dy) % p;
+      }
+    }
+
+    // Folded Stage 2 + Stage 3 quotient lookup tables
+    const minQx = -((h + a + b + 2) | 0);
+    const maxQx = (h + 2) | 0;
+    const offsetQx = -minQx;
+    const xhFromQx = new Int32Array(maxQx - minQx + 1);
+    for (let qx = minQx; qx <= maxQx; qx++) {
+      const H = h > 1 ? ((qx % h) + h) % h : 0;
+      xhFromQx[qx + offsetQx] = h > 1 ? (aInvH * H) % h : 0;
+    }
+
+    const minQy = -((v + c + d + 2) | 0);
+    const maxQy = (v + 2) | 0;
+    const offsetQy = -minQy;
+    const yvFromQy = new Int32Array(maxQy - minQy + 1);
+    for (let qy = minQy; qy <= maxQy; qy++) {
+      const V = v > 1 ? ((qy % v) + v) % v : 0;
+      yvFromQy[qy + offsetQy] = v > 1 ? (dInvV * V) % v : 0;
+    }
+
+    const cxhTerm = new Int32Array(h);
+    for (let xh = 0; xh < h; xh++) {
+      cxhTerm[xh] = v > 1 ? (dInvV * (v - ((c * xh) % v))) % v : 0;
+    }
+
+    const byvTerm = new Int32Array(v);
+    for (let yv = 0; yv < v; yv++) {
+      byvTerm[yv] = h > 1 ? (aInvH * (h - ((b * yv) % h))) % h : 0;
+    }
+
+    const pxhArr = new Int32Array(h);
+    for (let xh = 0; xh < h; xh++) pxhArr[xh] = p * xh;
+
+    const pyvArr = new Int32Array(v);
+    for (let yv = 0; yv < v; yv++) pyvArr[yv] = p * yv;
+
+    return {
+      p,
+      h,
+      v,
+      caseType,
+      dx0Arr,
+      dxDArr,
+      dxCArr,
+      dy0Arr,
+      dyBArr,
+      dyAArr,
+      offsetQx,
+      xhFromQx,
+      offsetQy,
+      yvFromQy,
+      cxhTerm,
+      byvTerm,
+      pxhArr,
+      pyvArr,
+    };
+  }
+
+    // Descrambles a 32-bit RGBA pixel buffer (Uint32Array view over ImageData.data.buffer)
+    // using the 1D-LUT vectorized 4-Stage IGRT.
+  function descrambleBuffer32IGRT(
+    src32,
+    dst32,
+    width,
+    height,
+    M,
+    N,
+    a,
+    b,
+    c,
+    d,
+    rm,
+    rn
+  ) {
+    const tileW = (width / M) | 0;
+    const tileH = (height / N) | 0;
+
+    const {
+      p,
+      h,
+      v,
+      caseType,
+      dx0Arr,
+      dxDArr,
+      dxCArr,
+      dy0Arr,
+      dyBArr,
+      dyAArr,
+      offsetQx,
+      xhFromQx,
+      offsetQy,
+      yvFromQy,
+      cxhTerm,
+      byvTerm,
+      pxhArr,
+      pyvArr,
+    } = buildIGRTLookupTables(M, N, a, b, c, d, rm, rn);
+
+    for (let yp = 0; yp < N; yp++) {
+      const dy0 = dy0Arr[yp];
+      const dyB = dyBArr[yp];
+      const dyA = dyAArr[yp];
+      const srcBaseY = yp * tileH;
+
+      for (let xp = 0; xp < M; xp++) {
+        const dx0 = dx0Arr[xp];
+        let x_p = 0;
+        let y_p = 0;
+        if (p > 1) {
+          x_p = dxDArr[xp] + dyB;
+          if (x_p >= p) x_p -= p;
+          y_p = dxCArr[xp] + dyA;
+          if (y_p >= p) y_p -= p;
+        }
+
+        const qx = ((dx0 - (a * x_p + b * y_p)) / p) | 0;
+        const qy = ((dy0 - (c * x_p + d * y_p)) / p) | 0;
+
+        let x_h = xhFromQx[qx + offsetQx];
+        let y_v = yvFromQy[qy + offsetQy];
+
+        if (caseType === 2) {
+          y_v += cxhTerm[x_h];
+          if (y_v >= v) y_v -= v;
+        } else if (caseType === 3) {
+          x_h += byvTerm[y_v];
+          if (x_h >= h) x_h -= h;
+        }
+
+        const x = x_p + pxhArr[x_h];
+        const y = y_p + pyvArr[y_v];
+
+        if (tileW === 1 && tileH === 1) {
+          dst32[y * width + x] = src32[yp * width + xp];
+        } else {
+          const dstBaseY = y * tileH;
+          const srcBaseX = xp * tileW;
+          const dstBaseX = x * tileW;
+          for (let r = 0; r < tileH; r++) {
+            const sOff = (srcBaseY + r) * width + srcBaseX;
+            const dOff = (dstBaseY + r) * width + dstBaseX;
+            for (let col = 0; col < tileW; col++) {
+              dst32[dOff + col] = src32[sOff + col];
+            }
+          }
+        }
+      }
+    }
+  }
+
+    // Descrambles a tiled image using 1D-LUT vectorized 4-Stage IGRT and renders
+    // the reconstructed image onto an HTML5 Canvas.
   function descrambleCanvasGRT(
     scrambledImageSource,
     targetCanvas,
@@ -328,7 +333,6 @@
       );
     }
 
-    // Resize canvas if necessary to match source image
     if (targetCanvas.width !== width) {
       targetCanvas.width = width;
     }
@@ -341,59 +345,77 @@
       throw new Error("Unable to acquire 2D rendering context from targetCanvas");
     }
 
-    // Disable image smoothing for 100% pixel-exact tile spatial blitting
     ctx.imageSmoothingEnabled = false;
 
-    const tileWidth = width / M;
-    const tileHeight = height / N;
+    if (typeof ctx.getImageData === 'function' && typeof ctx.createImageData === 'function' && typeof ctx.putImageData === 'function') {
+      ctx.drawImage(scrambledImageSource, 0, 0, width, height);
+      const srcImageData = ctx.getImageData(0, 0, width, height);
+      const dstImageData = ctx.createImageData(width, height);
 
-    // Iterate over every scrambled tile position (xp, yp)
-    for (let yp = 0; yp < N; yp++) {
-      for (let xp = 0; xp < M; xp++) {
-        // Map scrambled tile coordinate (xp, yp) to original position [x, y]
-        const [x, y] = inverseGRTCoordinate(xp, yp, M, N, a, b, c, d, rm, rn);
+      const src32 = new Uint32Array(
+        srcImageData.data.buffer,
+        srcImageData.data.byteOffset,
+        width * height
+      );
+      const dst32 = new Uint32Array(
+        dstImageData.data.buffer,
+        dstImageData.data.byteOffset,
+        width * height
+      );
 
-        const srcX = xp * tileWidth;
-        const srcY = yp * tileHeight;
-        const dstX = x * tileWidth;
-        const dstY = y * tileHeight;
+      descrambleBuffer32IGRT(
+        src32,
+        dst32,
+        width,
+        height,
+        M,
+        N,
+        a,
+        b,
+        c,
+        d,
+        rm,
+        rn
+      );
 
-        ctx.drawImage(
-          scrambledImageSource,
-          srcX,
-          srcY,
-          tileWidth,
-          tileHeight,
-          dstX,
-          dstY,
-          tileWidth,
-          tileHeight
-        );
+      ctx.putImageData(dstImageData, 0, 0);
+    } else {
+      const tileWidth = (width / M) | 0;
+      const tileHeight = (height / N) | 0;
+      for (let yp = 0; yp < N; yp++) {
+        for (let xp = 0; xp < M; xp++) {
+          const [x, y] = inverseGRTCoordinate(xp, yp, M, N, a, b, c, d, rm, rn);
+          ctx.drawImage(
+            scrambledImageSource,
+            xp * tileWidth,
+            yp * tileHeight,
+            tileWidth,
+            tileHeight,
+            x * tileWidth,
+            y * tileHeight,
+            tileWidth,
+            tileHeight
+          );
+        }
       }
     }
   }
 
-  // Export module interface
   const GRT = {
     gcd,
     mod,
     modInverse,
-    validateGRTParameters,
-    forwardGRTCoordinate,
     inverseGRTCoordinate,
+    buildIGRTLookupTables,
+    descrambleBuffer32IGRT,
     descrambleCanvasGRT,
   };
 
-  // Browser environment export
   if (typeof window !== "undefined") {
     window.GRT = GRT;
-    window.inverseGRTCoordinate = inverseGRTCoordinate;
-    window.forwardGRTCoordinate = forwardGRTCoordinate;
-    window.validateGRTParameters = validateGRTParameters;
     window.descrambleCanvasGRT = descrambleCanvasGRT;
   }
 
-  // Node.js CommonJS environment export
   if (typeof module !== "undefined" && module.exports) {
     module.exports = GRT;
   }

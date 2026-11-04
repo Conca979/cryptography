@@ -35,3 +35,7 @@ benchmark_results.json
 
 TEST*
 validation_harness.html
+
+benchmark_overhead.py
+srt_server.py
+isrt_client.js
