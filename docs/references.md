@@ -1,5 +1,13 @@
 # Proposed title: Application Of Transposition Ciphers In Anti-Scraping Image Protection System Using Tile Transposition
 
+## Resources
+1. [Server-side encyption implementation on Python](../src/cryptography/grt_server.py)
+2. [Client-side decyption implementation on javascript](../src/cryptography/igrt_client.js)
+3. [Overall benchmark overhead evaluation when using GRT algorithm](./benchmark_report.md)
+
+## Limitation
+
+## Future work
 
 ## References
 
