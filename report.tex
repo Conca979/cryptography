@@ -1,22 +1,130 @@
 \documentclass{article}
+
 \usepackage{graphicx} % Required for inserting images
 \usepackage[top=2.5cm, bottom=2.5cm, left=2.5cm, right=2.5cm]{geometry}
-\title{Application Of Tile Transposition Ciphers In Anti-Scraping Image Protection System}
+\usepackage{hyperref}
+\usepackage{amsmath}
 \date{}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue,
+  citecolor=blue,
+  urlcolor=blue,
+  pdftitle={Application Of Tile Transposition Ciphers In Anti-Scraping Image Protection System},
+  pdfauthor={Nguyen Tung Duong, Nguyen Mai Anh, Pham Dinh Anh Duong, Ta Quang Huy, Ha Dang Huy, Nguyen Minh Duc, Nguyen Minh Luong}
+}
+
 \begin{document}
-\maketitle
+
+% ==================== COVER PAGE ====================
+\begin{titlepage}
+  \centering
+  {\large\textbf{UNIVERSITY OF SCIENCE AND TECHNOLOGY OF HANOI}\par}
+  \vspace{1.5cm}
+  \includegraphics[width=0.72\textwidth]{usth_logo.png}\par
+  \vspace{2.0cm}
+  {\LARGE\textbf{Application Of Tile Transposition Ciphers In Anti-Scraping Image Protection System}\par}
+  \vspace{2.2cm}
+  \renewcommand{\arraystretch}{1.4}
+  \begin{tabular}{|l|c|c|}
+    \hline
+    \textbf{Full Name} & \textbf{Student ID} & \textbf{Major} \\
+    \hline
+    \textbf{Nguyen Tung Duong }& 23BA14076 & ICT \\
+    Tran Mai Anh & 2410093 & ICT \\
+    Pham Dinh Anh Duong & 23BA14075 & ICT \\
+    Ta Quang Huy & 23BA14037 & ICT \\
+    Ha Dang Huy & 23BA14138 & ICT \\
+    Nguyen Minh Duc & 23BA14056 & ICT \\
+    Nguyen Minh Luong & 23BA14184 & ICT \\
+    \hline
+  \end{tabular}\par
+  \vfill
+  {\large Academic Year: 2026 -- 2027\par}
+\end{titlepage}
+
+% ============ TABLE OF CONTENTS Pages=========
+\pagenumbering{arabic}
+\setcounter{page}{1}
+\tableofcontents
+\newpage
+
+% ====== Introduction page =========
+
 \section{Introduction}
-\subsection{Problem Statement}
-Images are widely stored and distributed through websites and Content Delivery Networks (CDNs), making them easily accessible to automated scraping tools at low computational cost. This may facilitate the unauthorized collection and redistribution of images. Meanwhile, existing image-protection methods face a trade-off between security and performance, as pixel-level scrambling can disrupt spatial correlation, leading to an increase in compressed file size. Therefore, websites need to balance image protection, bandwidth costs, and display performance.
+\subsection{Problem Statement: Automated Image Scraping and Economic Threats}
+Images are widely stored and distributed via websites and Content Delivery Networks (CDNs), which enable images to be loaded and collected automatically at low processing cost. This may allow the unauthorized and illegal redistribution of images. Images are widely stored and distributed via websites and Content Delivery Networks (CDNs), which enable images to be loaded and collected automatically at low processing cost. This may allow unauthorized and illegal redistribution of images. In addition, existing image-protection methods may involve a trade-off between protection and performance. In pixel-chaotic ciphers, shuffling individual pixels across the entire image destroys spatial correlation, leading to an increase in compressed file size. Therefore, websites need to balance image protection, bandwidth costs, and display performance.
 
 These challenges motivate the exploration of tile-level image scrambling using the Generalized Rectangular Transform (GRT), which aims to protect image assets while maintaining efficient reconstruction.
 
 \subsection{Objectives}
 \begin{itemize}
-    \item Reproduce and implement GRT-based tile-level image scrambling and inverse reconstruction
-    \item Validate the reversibility of GRT and confirm pixel-perfect image recovery
-    \item Measure computational latency, memory usage and compression overhead to assess its feasibility for web-based image protection
+    \item Reproduce and implement GRT-based tile-level image scrambling on the server (Python) and client-side viewport reconstruction (JavaScript Canvas).
+    \item Validate the reversibility of GRT and confirm pixel-perfect image recovery with no quality loss.
+    \item Measure computational latency, memory usage, and compression overhead across standard web formats (PNG, WebP, JPEG) to assess its feasibility for web-based image protection.
 \end{itemize}
 
+\section{Theoretical Background}
+\subsection{From SRT to GRT}
+Special Rectangular Transform (SRT) is a transformation method used to rearrange pixel positions, allowing accurate image reconstruction through its corresponding inverse transformation (ISRT) \cite{Lan2025ANM}. The SRT matrix is expressed as:
+\begin{equation}
+R_{\mathrm{SRT}} =
+\begin{bmatrix}
+        1 & r \\
+        s & rs+1
+    \end{bmatrix}
+\label{eq:srt}
+\end{equation}
+\noindent where \(r\) and \(s\) are two integer parameters that determine the transformation matrix. However, its transformation matrix is constrained because the upper-left element is fixed at 1, resulting in only two degrees of freedom. To address this limitation, we adopt the GRT to enhance the flexibility of the transformation matrix.
+
+Unlike SRT, GRT involves 4 parameters \((a,b,c,d)\), providing 4 degrees of freedom and greater flexibility in the transformation matrix \cite{Lan2025ANM}. The GRT Transform Matrix rearranges pixel coordinates without directly changing the pixel values and is expressed as:
+\begin{equation}
+\begin{bmatrix}
+x\\y
+\end{bmatrix}_{n+1}
+=
+\left\{
+\begin{bmatrix}
+a&b\\c&d
+\end{bmatrix}
+\begin{bmatrix}
+x\\y
+\end{bmatrix}_n
++
+\begin{bmatrix}
+r_m\\r_n
+\end{bmatrix}
+\right\}
+\bmod
+\begin{bmatrix}
+M\\N
+\end{bmatrix}
+\end{equation}
+\noindent where \((a,b,c,d)\) are 4 transformation parameters, \((x, y)_n\) are original pixel coordinates, \((x, y)_{n+1}\) are transformed pixel coordinates, \((r_m, r_n)\) are coordinate shifting offsets, and \(M\), \(N\) are image height and width. However, the parameter set \((a,b,c,d)\) mus satisfy 4 mathematical conditions \cite{Lan2025ANM}. These conditions depend on the image dimensions, the greatest common divisor, and the matrix determinant to ensure a valid rectangular transformation.
+
+To restore original pixel coordinates, we adopt the Inverse GRT (IGRT), which resolves the naïve inverse transform problem that can lead to incorrect pixel coordinates in rectangular images. Moreover, IGRT does not require prior knowledge of the transformation matrix's periodicity.
+
+\subsection{Key Terminology}
+\begin{itemize}
+    \item \textbf{Pixel Permutation} rearranges pixel positions without changing their values. In GRT, a flexible transformation matrix is used to disrupt spatial correlations between neighboring pixels \cite{Lan2025ANM}.
+    \item \textbf{Pixel Diffusion} modifies pixel values rather than their positions, typically following the permutation stage in image encryption \cite{Lan2025ANM}.
+    \item \textbf{Block-Based Scrambling} is applied in our project by splitting the image into several blocks or tiles and then permuting their positions. The original image can be reconstructed by restoring the blocks to their original positions.
+    \item \textbf{Reversibility} allows the reconstruction of the original image arrangement, while \textbf{Bijective Mapping} ensures a "one-to-one" correspondence between original and transformed positions, meaning that each original position maps to exactly one transformed position and vice versa. This prevents duplicated or missing positions. Therefore, scrambled blocks can be restored to their original positions.
+\end{itemize}
+
+
+\newpage
+\begin{thebibliography}{9}
+\bibitem{Lan2025ANM}
+Y.-C. Lan and C.-M. Wang,
+``A Novel Multi-Image Encryption Scheme Using
+Generalized Rectangular Transform and Advanced
+5-D Hyperchaotic Map,''
+\textit{IEEE Access}, vol. 13,
+pp. 43316--43337, 2025.
+doi: 10.1109/ACCESS.2025.3547891.
+
+\end{thebibliography}
 
 \end{document}
