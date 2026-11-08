@@ -1,27 +1,20 @@
-% I.Introduction Ánh Dương, Mai Anh
-% Context
-% Problem statement
-% objective
-% II. Theoretical background TD, Mai Anh
-% Mention SRT, and then we propose GRT 
-% Terminology explanation
-% III. Methonology and application TD, Tạ Huy (*)
-% Workflow
-% Implementation  
-% IV. Evaluation and result Minh Đức, Minh Lương (*)
-% Benchmark report
-% V. Conclusion HHuy, MDuc 
-% Limitation
-% Future work
+% ==============================================================================
+% Course Project Report: Applied Cryptography
+% Title: Application of Tile Transposition Ciphers in Anti-Scraping Image Protection System
+% University of Science and Technology of Hanoi (USTH)
+% ==============================================================================
 
-% TD giám sát hết các phần
+\documentclass[11pt,a4paper]{article}
 
-\documentclass{article}
-
-\usepackage{graphicx} % Required for inserting images
+\usepackage{graphicx}
 \usepackage[top=2.5cm, bottom=2.5cm, left=2.5cm, right=2.5cm]{geometry}
 \usepackage{hyperref}
-\date{}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{multirow}
+\usepackage{float}
+\usepackage{subcaption}
 
 \hypersetup{
   colorlinks=true,
@@ -61,26 +54,375 @@
   {\large Academic Year: 2026 -- 2027\par}
 \end{titlepage}
 
-% ============ TABLE OF CONTENTS Pages=========
+% ============ TABLE OF CONTENTS =============
 \pagenumbering{arabic}
 \setcounter{page}{1}
 \tableofcontents
 \newpage
 
-% ====== Introduction page =========
-
+% ==============================================================================
+% SECTION I: INTRODUCTION
+% Authors: Pham Dinh Anh Duong, Tran Mai Anh
+% ==============================================================================
 \section{Introduction}
+
 \subsection{Problem Statement}
-Images are widely stored and distributed through websites and Content Delivery Networks (CDNs), making them easily accessible to automated scraping tools at low computational cost. This may facilitate the unauthorized collection and redistribution of images. Meanwhile, existing image-protection methods face a trade-off between security and performance, as pixel-level scrambling can disrupt spatial correlation, leading to an increase in compressed file size. Therefore, websites need to balance image protection, bandwidth costs, and display performance.
+Images are an essential part of many online platforms, such as online comic readers, webtoon sites, photography portfolios, and e-commerce stores. These images are typically delivered through Content Delivery Networks (CDNs) so that users around the world can load them quickly. However, this open delivery model also makes images easy targets for automated scraping. Anyone with basic command-line tools like \texttt{curl} or simple Python scripts can download thousands of images in minutes at almost no cost. In addition, unauthorized websites often practice ``hotlinking'' by embedding image URLs directly into their own pages, consuming the original server's bandwidth without giving it any traffic.
 
-These challenges motivate the exploration of tile-level image scrambling using the Generalized Rectangular Transform (GRT), which aims to protect image assets while maintaining efficient reconstruction.
-
-\subsection{Objectives}
+Standard security approaches do not solve this problem well:
 \begin{itemize}
-    \item Reproduce and implement GRT-based tile-level image scrambling and inverse reconstruction
-    \item Validate the reversibility of GRT and confirm pixel-perfect image recovery
-    \item Measure computational latency, memory usage and compression overhead to assess its feasibility for web-based image protection
+    \item \textbf{HTTPS / TLS:} HTTPS only protects data while it is traveling over the network. Once the image reaches the user's browser, it is stored in clear form in memory or browser cache, where any scraping script can easily copy it.
+    \item \textbf{The Display Problem (Analog Hole):} Because images must eventually be shown on screen to human users, we cannot keep them encrypted in the final display. If we use standard decryption (like AES) on the full image file, scrapers can simply intercept the decrypted file right before rendering.
+    \item \textbf{Pixel-Level Scrambling and File Size:} Traditional image encryption techniques (such as Arnold's Cat Map) scramble individual pixels. While this hides the image, it completely ruins the smooth color transitions between neighboring pixels. Standard web formats like PNG, WebP, and JPEG rely on these smooth transitions to compress data. When pixels are shuffled randomly, the image turns into noisy data, and file sizes increase by $300\%$ to $600\%$. This causes high bandwidth bills and slow page loading.
 \end{itemize}
 
+To address these issues, we look at tile-level image scrambling using the Generalized Rectangular Transform (GRT). Instead of shuffling individual pixels, we divide the image into a grid of small rectangular tiles and shuffle the tiles. Because each tile keeps its original internal pixels intact, compression algorithms still work effectively, while unauthorized downloaders only see an unreadable jigsaw puzzle.
+
+\subsection{Objectives}
+In this project, our goals are:
+\begin{itemize}
+    \item Implement the Generalized Rectangular Transform (GRT) in Python on the server to scramble images into tiles, and implement the Inverse GRT (IGRT) in JavaScript to reconstruct the original image on an HTML5 Canvas in the browser.
+    \item Fix the stationary origin flaw found in simpler transforms (where the top-left tile at position $(0,0)$ never moves) by adding a translation offset vector $(r_m, r_n)$.
+    \item Verify that the scrambling is 100\% reversible, meaning the reconstructed image matches the original image pixel-by-pixel with zero quality loss ($\text{MSE} = 0.0$, $\text{PSNR} = \infty$).
+    \item Measure execution speed, memory usage, and file size across PNG, WebP, and JPEG to see if this approach is fast and lightweight enough for practical web delivery.
+\end{itemize}
+
+\newpage
+
+% ==============================================================================
+% SECTION II: THEORETICAL BACKGROUND AND MATHEMATICAL FORMULATIONS
+% Authors: Nguyen Tung Duong, Tran Mai Anh
+% ==============================================================================
+\section{Theoretical Background and Mathematical Formulations}
+% [Assigned to Nguyen Tung Duong, Tran Mai Anh]
+
+\subsection{Notations and Terminology}
+We divide an image of width $W$ and height $H$ into a grid of $M \times N$ rectangular tiles, where $M$ is the number of tile columns and $N$ is the number of tile rows. Each tile has width $T_w = W / M$ and height $T_h = H / N$.
+
+We represent the position of each tile using coordinates $(x, y)$, where $x \in \{0, 1, \dots, M-1\}$ and $y \in \{0, 1, \dots, N-1\}$. When the image is scrambled, tile $(x, y)$ moves to a new position $(x', y')$.
+
+We define the shared grid factor $p$ as:
+\begin{equation}
+    p = \gcd(M, N)
+\end{equation}
+The reduced aspect ratio factors are:
+\begin{equation}
+    h = \frac{M}{p}, \quad v = \frac{N}{p}, \quad \text{with } \gcd(h, v) = 1
+\end{equation}
+
+\subsection{From Arnold Cat Map to Special Rectangular Transform (SRT)}
+The well-known Arnold Cat Map only works on square images where $M = N$, and decrypting it requires repeating the forward transform many times until the image happens to return to its initial state. 
+
+To handle rectangular images with direct decryption, Lan and Wang (2025) proposed the Special Rectangular Transform (SRT):
+\begin{equation}
+    \begin{bmatrix} x_{n+1} \\ y_{n+1} \end{bmatrix} = \begin{bmatrix} 1 & r \\ s & rs + 1 \end{bmatrix} \begin{bmatrix} x_n \\ y_n \end{bmatrix} \bmod \begin{bmatrix} M \\ N \end{bmatrix}
+\end{equation}
+By choosing parameters such that $(r \bmod h = 0 \lor s \bmod v = 0)$ and $\gcd(rs + 1, v) = 1$, the equations decouple, allowing direct inversion in two steps. 
+
+However, SRT has a notable weakness: because it is a linear transform with no shift, the tile at $(0, 0)$ always stays at $(0, 0)$:
+\begin{equation}
+    \begin{bmatrix} 1 & r \\ s & rs + 1 \end{bmatrix} \begin{bmatrix} 0 \\ 0 \end{bmatrix} \equiv \begin{bmatrix} 0 \\ 0 \end{bmatrix} \pmod{\begin{bmatrix} M \\ N \end{bmatrix}}
+\end{equation}
+This means the top-left tile never moves, giving scrapers a fixed reference point to start piecing the image back together.
+
+\subsection{Generalized Rectangular Transform (GRT)}
+To ensure every tile moves, the Generalized Rectangular Transform (GRT) adds an offset vector $\begin{bmatrix} r_m \\ r_n \end{bmatrix}$:
+\begin{equation}
+    \begin{bmatrix} x' \\ y' \end{bmatrix} = \left( \begin{bmatrix} a & b \\ c & d \end{bmatrix} \begin{bmatrix} x \\ y \end{bmatrix} + \begin{bmatrix} r_m \\ r_n \end{bmatrix} \right) \bmod \begin{bmatrix} M \\ N \end{bmatrix}
+\end{equation}
+Now, the origin tile $(0, 0)$ moves to $(r_m, r_n)$, removing the stationary corner problem.
+
+\subsection{The 4 Reversibility Conditions}
+For the transform to be one-to-one (every tile maps to a unique position and can be recovered), the matrix parameters $a, b, c, d$ must satisfy four conditions:
+\begin{enumerate}
+    \item \textbf{Condition 1:} $(b \bmod h = 0) \lor (c \bmod v = 0)$. This prevents horizontal and vertical wrap-around terms from mixing during decryption.
+    \item \textbf{Condition 2:} $\gcd(|G|, p) = 1$, where $|G| = |ad - bc|$. This ensures that the matrix can be inverted modulo $p$.
+    \item \textbf{Condition 3:} $\gcd(a, h) = 1$. This ensures unique mapping along the horizontal quotient factor $h$.
+    \item \textbf{Condition 4:} $\gcd(d, v) = 1$. This ensures unique mapping along the vertical quotient factor $v$.
+\end{enumerate}
+
+\subsection{The 4-Stage Exact Inversion (IGRT)}
+When these four conditions hold, we can recover original tile coordinates $(x, y)$ from scrambled coordinates $(x', y')$ in four steps:
+\begin{itemize}
+    \item \textbf{Stage 1 (Equilateral Inverse):} First, subtract $(r_m, r_n)$ and invert modulo $p$ to find the remainders $(x_p, y_p)$:
+    \begin{equation}
+        \begin{bmatrix} x_p \\ y_p \end{bmatrix} = |G|_{[p]}^{-1} \begin{bmatrix} d & -b \\ -c & a \end{bmatrix} \begin{bmatrix} x' - r_m \\ y' - r_n \end{bmatrix} \bmod p
+    \end{equation}
+    \item \textbf{Stage 2 (Projection Mapping):} Compute the projected quotient differences $(H, V)$:
+    \begin{equation}
+        \begin{bmatrix} H \\ V \end{bmatrix} = \left( \left\lfloor \frac{\begin{bmatrix} x' - r_m \\ y' - r_n \end{bmatrix} - \begin{bmatrix} a & b \\ c & d \end{bmatrix} \begin{bmatrix} x_p \\ y_p \end{bmatrix}}{p} \right\rfloor \right) \bmod \begin{bmatrix} h \\ v \end{bmatrix}
+    \end{equation}
+    \item \textbf{Stage 3 (Triangular Uncoupling):} Solve for $(x_h, y_v)$ using modular inverses of $a$ and $d$. Depending on whether $b \bmod h = 0$ or $c \bmod v = 0$, this reduces to a simple triangular system.
+    \item \textbf{Stage 4 (Assembly):} Combine the remainders and quotients to obtain the original coordinates:
+    \begin{equation}
+        x = x_p + p \cdot x_h, \quad y = y_p + p \cdot y_v
+    \end{equation}
+\end{itemize}
+
+\newpage
+
+% ==============================================================================
+% SECTION III: ALGORITHM DESIGN AND SYSTEM IMPLEMENTATION
+% Authors: Nguyen Tung Duong, Ta Quang Huy
+% ==============================================================================
+\section{Algorithm Design and System Implementation}
+% [Assigned to Nguyen Tung Duong, Ta Quang Huy]
+
+\subsection{System Architecture and Workflow}
+The workflow of our anti-scraping system is straightforward and fits easily into standard web architectures:
+\begin{enumerate}
+    \item \textbf{Server Scrambling:} When an image is uploaded or published, the Python backend splits it into $M \times N$ tiles, shuffles them using the forward GRT formula, and saves the scrambled image as a normal WebP or PNG file.
+    \item \textbf{CDN Storage:} The scrambled image is stored on a public CDN. Any automated tool that downloads the image directly (like \texttt{curl} or a scraper) only gets a scrambled mosaic.
+    \item \textbf{Client Delivery:} When an authorized user visits the webpage, the browser downloads the scrambled image and receives the transform parameters $(a, b, c, d, r_m, r_n)$ for that session.
+    \item \textbf{Canvas Assembly:} A small JavaScript script on the webpage uses IGRT to put the tiles back into their correct positions and draws the clean image onto an HTML5 Canvas element.
+\end{enumerate}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.92\textwidth]{docs/images/visualize.png}
+    \caption{Overview of the anti-scraping pipeline: Python server scrambles tiles, CDN serves scrambled images, and client JavaScript unscrambles onto an HTML5 Canvas.}
+    \label{fig:pipeline}
+\end{figure}
+
+\subsection{Server Implementation in Python (\texttt{grt\_server.py})}
+The server script is written in Python 3.10 and only uses NumPy and Pillow (PIL):
+\begin{itemize}
+    \item \textbf{Parameter Checking:} The function \texttt{validate\_grt\_parameters} verifies that the chosen parameters satisfy Conditions 1 through 4 before scrambling begins.
+    \item \textbf{Tile Slicing:} Using NumPy 2-D array slicing, tiles are extracted and copied into their new positions quickly without extra intermediate buffers.
+    \item \textbf{Edge Padding:} If the image width or height is not cleanly divisible by $M$ or $N$, \texttt{pad\_image\_to\_grid} adds a few border pixels so the tiles divide evenly.
+\end{itemize}
+
+\subsection{Client Implementation in JavaScript (\texttt{igrt\_client.js})}
+The client script runs in the browser using vanilla JavaScript without any external libraries:
+\begin{itemize}
+    \item \textbf{Safe Modulo Function:} JavaScript's \texttt{\%} operator can return negative values for negative numbers, which leads to wrong array indices. We use \texttt{mod(n, m) = ((n \% m) + m) \% m} to always keep results positive.
+    \item \textbf{Precomputed Tables (LUTs):} All modular inverse and division operations are calculated once before the tile loop and stored in 1-D TypedArrays. Inside the loop, finding the original position of a tile is just a quick table lookup.
+    \item \textbf{Fast Canvas Copying:} We use a \texttt{Uint32Array} view over the canvas image buffer. This allows copying full 32-bit RGBA pixels in single operations, keeping the descrambling fast.
+\end{itemize}
+
+\newpage
+
+% ==============================================================================
+% SECTION IV: EXPERIMENTAL EVALUATION AND RESULTS
+% Authors: Nguyen Minh Duc, Nguyen Minh Luong (*)
+% ==============================================================================
+\section{Experimental Evaluation and Results}
+% [Assigned to Nguyen Minh Duc, Nguyen Minh Luong (*)]
+
+In this section, we test our system to answer three main questions:
+\begin{enumerate}
+    \item How fast is the scrambling on the server, and can the client decode the image fast enough for a smooth user experience?
+    \item How much memory does the server need, and are there any memory leaks?
+    \item How much does tile scrambling increase the file size compared to normal images and pixel-level scrambling?
+\end{enumerate}
+
+\subsection{Testing Setup}
+All tests were conducted on a Windows 11 machine with a modern x86\_64 multi-core processor:
+\begin{itemize}
+    \item \textbf{Server Environment:} Python 3.10.0 (64-bit), Pillow 10.0, NumPy 1.26.
+    \item \textbf{Client Environment:} Node.js v22.19.0 (running Google V8 engine v12.9) for automated measurement, along with a Chromium browser for visual verification on HTML5 Canvas.
+    \item \textbf{Timing Method:} For each test, we performed 5 warmup runs followed by $K = 30$ recorded runs. We report the average (mean), standard deviation ($\pm \sigma$), and median time in milliseconds.
+    \item \textbf{Memory Tracking:} Server memory was measured using Python's built-in \texttt{tracemalloc} module.
+\end{itemize}
+
+We tested three different image and grid combinations:
+\begin{enumerate}
+    \item \textbf{Scenario 1 (Real Photo, Fine Grid):} A photograph (\texttt{t4.png}, $612 \times 408$ pixels, 24-bit RGB) split into an $18 \times 12$ grid ($216$ tiles, each $34 \times 34$ pixels).
+    \item \textbf{Scenario 2 (Synthetic Image, Square Grid):} A test pattern ($768 \times 512$ pixels, 24-bit RGB) split into a $16 \times 16$ grid ($256$ tiles, each $48 \times 32$ pixels).
+    \item \textbf{Scenario 3 (Synthetic Image, Non-Square Grid):} The same test pattern ($768 \times 512$ pixels) split into a $24 \times 16$ grid ($384$ tiles, each $32 \times 32$ pixels).
+\end{enumerate}
+
+\subsection{Execution Time (Latency)}
+Table~\ref{tab:latency} shows the time taken to scramble the image on the server ($T_{\text{enc}}$) and unscramble it on the client ($T_{\text{dec}}$).
+
+\begin{table}[H]
+\centering
+\caption{Execution Time across Test Scenarios ($K = 30$ runs)}
+\label{tab:latency}
+\begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}lcccccc@{}}
+\toprule
+\textbf{Scenario} & \textbf{Size} & \textbf{Grid ($M \times N$)} & \textbf{Tiles} & \textbf{Server $T_{\text{enc}}$ (ms)} & \textbf{Client $T_{\text{dec}}$ (ms)} & \textbf{Total Time (ms)} \\
+\midrule
+Photo (Fine)         & $612 \times 408$ & $18 \times 12$ & 216 & $1.34 \pm 0.13$ & $\mathbf{0.32 \pm 0.04}$ & $1.66 \pm 0.14$ \\
+Synthetic (Square)    & $768 \times 512$ & $16 \times 16$ & 256 & $1.92 \pm 0.03$ & $\mathbf{0.51 \pm 0.11}$ & $2.43 \pm 0.14$ \\
+Synthetic (Non-Square)& $768 \times 512$ & $24 \times 16$ & 384 & $2.21 \pm 0.13$ & $\mathbf{0.51 \pm 0.11}$ & $2.72 \pm 0.18$ \\
+\bottomrule
+\end{tabular*}
+\end{table}
+
+\paragraph{Discussion:}
+\begin{itemize}
+    \item \textbf{Server Performance:} Server-side scrambling takes around $1.34\text{ ms}$ for the real photo and up to $2.21\text{ ms}$ for the 384-tile pattern. In a real website, this step is only run once when the image is uploaded or cached. A processing time of under $2.5\text{ ms}$ means the server can easily handle thousands of image uploads per minute.
+    \item \textbf{Client Decoding Speed:} On the client side, unscrambling takes only $\mathbf{0.32\text{ ms}}$ to $\mathbf{0.51\text{ ms}}$. For web pages to feel smooth at 60 frames per second (FPS), each frame has a time budget of about $16.6\text{ ms}$. Taking only $0.32\text{ ms}$ is less than $2\%$ of that budget. This means users will not notice any lag or stutter when opening pages with many images.
+    \item \textbf{Why Client Decoding is Fast:} In \texttt{igrt\_client.js}, we precompute the coordinate lookups into small 1-D arrays before looping through the tiles. Because of this, the inner loop does not need to compute modular inverses or greatest common divisors repeatedly. It only does simple array reads and copies 32-bit pixel data directly.
+\end{itemize}
+
+\subsection{Memory Usage on the Server}
+We used Python's \texttt{tracemalloc} module to measure how much RAM the server needs while scrambling images. Table~\ref{tab:memory} shows the raw image size, peak memory used, and remaining memory after scrambling.
+
+\begin{table}[H]
+\centering
+\caption{Server Memory Usage Measured with \texttt{tracemalloc}}
+\label{tab:memory}
+\begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}lcccccc@{}}
+\toprule
+\textbf{Scenario} & \textbf{Dimensions} & \textbf{Raw Buffer} & \textbf{Peak RAM} & \textbf{Peak / Raw Ratio} & \textbf{Residual RAM} \\
+\midrule
+Photo ($18 \times 12$)         & $612 \times 408$ & $731.3\text{ KB}$  & $1464.8\text{ KB}$ & $\mathbf{2.00\times}$ & $0.8\text{ KB}$ \\
+Synthetic ($16 \times 16$)     & $768 \times 512$ & $1152.0\text{ KB}$ & $2306.5\text{ KB}$ & $\mathbf{2.00\times}$ & $0.8\text{ KB}$ \\
+Synthetic ($24 \times 16$)     & $768 \times 512$ & $1152.0\text{ KB}$ & $2306.5\text{ KB}$ & $\mathbf{2.00\times}$ & $0.8\text{ KB}$ \\
+\bottomrule
+\end{tabular*}
+\end{table}
+
+\paragraph{Discussion:}
+\begin{itemize}
+    \item \textbf{Peak Memory Ratio:} For the $612 \times 408$ image, the raw uncompressed RGB data takes $612 \times 408 \times 3\text{ bytes} \approx 731.3\text{ KB}$. The peak memory recorded during scrambling was $1464.8\text{ KB}$, which is almost exactly twice the raw buffer size ($2.00\times$). This confirms that our code only holds the original image array and the output array in memory, without creating extra temporary copies.
+    \item \textbf{No Memory Leaks:} After the function finishes and garbage collection runs, the leftover memory is only $0.8\text{ KB}$. This shows that references are properly cleaned up, so memory will not build up over time when running on a web server.
+\end{itemize}
+
+\subsection{File Size and Compression Overhead}
+When an image is scrambled, edges are broken and rearranged. This can affect how well image formats compress the file. We tested three common web formats: PNG (lossless), WebP (lossless), and JPEG (lossy, quality $q=90$). Table~\ref{tab:compression} shows the size before and after GRT scrambling.
+
+\begin{table}[H]
+\centering
+\caption{File Size Comparison: Original vs. GRT Scrambled}
+\label{tab:compression}
+\begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}lcccc@{}}
+\toprule
+\textbf{Scenario \& Format} & \textbf{Original Size} & \textbf{Scrambled Size} & \textbf{Increase ($\Delta$)} \\
+\midrule
+\multicolumn{4}{l}{\textbf{Photo ($612 \times 408$), Grid $18 \times 12$ ($216$ tiles)}} \\
+\quad -- PNG (Deflate)       & $164.5\text{ KB}$ ($168{,}469\text{ B}$) & $177.7\text{ KB}$ ($181{,}963\text{ B}$) & $\mathbf{+8.01\%}$ \\
+\quad -- WebP (Lossless)      & $94.9\text{ KB}$ ($97{,}156\text{ B}$)   & $103.7\text{ KB}$ ($106{,}224\text{ B}$)  & $\mathbf{+9.33\%}$ \\
+\quad -- JPEG (Lossy $q=90$)  & $29.9\text{ KB}$ ($30{,}584\text{ B}$)   & $47.8\text{ KB}$ ($48{,}977\text{ B}$)   & $+60.14\%$ \\
+\midrule
+\multicolumn{4}{l}{\textbf{Synthetic ($768 \times 512$), Grid $16 \times 16$ ($256$ tiles)}} \\
+\quad -- PNG (Deflate)       & $268.0\text{ KB}$ ($274{,}480\text{ B}$) & $288.0\text{ KB}$ ($294{,}900\text{ B}$) & $\mathbf{+7.44\%}$ \\
+\quad -- WebP (Lossless)      & $149.5\text{ KB}$ ($153{,}052\text{ B}$) & $178.3\text{ KB}$ ($182{,}594\text{ B}$) & $+19.30\%$ \\
+\quad -- JPEG (Lossy $q=90$)  & $44.0\text{ KB}$ ($45{,}038\text{ B}$)   & $44.5\text{ KB}$ ($45{,}543\text{ B}$)   & $\mathbf{+1.12\%}$ \\
+\midrule
+\multicolumn{4}{l}{\textbf{Synthetic ($768 \times 512$), Grid $24 \times 16$ ($384$ tiles)}} \\
+\quad -- PNG (Deflate)       & $268.0\text{ KB}$ ($274{,}480\text{ B}$) & $289.3\text{ KB}$ ($296{,}253\text{ B}$) & $\mathbf{+7.93\%}$ \\
+\quad -- WebP (Lossless)      & $149.5\text{ KB}$ ($153{,}052\text{ B}$) & $176.0\text{ KB}$ ($180{,}186\text{ B}$) & $+17.73\%$ \\
+\quad -- JPEG (Lossy $q=90$)  & $44.0\text{ KB}$ ($45{,}038\text{ B}$)   & $45.0\text{ KB}$ ($46{,}039\text{ B}$)   & $\mathbf{+2.22\%}$ \\
+\bottomrule
+\end{tabular*}
+\end{table}
+
+\paragraph{Comparison with Pixel-Level Scrambling:}
+To understand why tile scrambling is practical for the web, Table~\ref{tab:head_to_head} compares our method against traditional pixel scrambling (such as Arnold's Cat Map).
+
+\begin{table}[H]
+\centering
+\caption{Comparison: Tile Transposition (GRT) vs. Pixel Scrambling}
+\label{tab:head_to_head}
+\begin{tabular*}{\textwidth}{@{\extracolsep{\fill}}lcc@{}}
+\toprule
+\textbf{Feature / Metric} & \textbf{Pixel Scrambling (Arnold Map)} & \textbf{Tile GRT (Our Method)} \\
+\midrule
+Granularity                 & Single Pixels ($1 \times 1$)       & Rectangular Tiles ($T_w \times T_h$) \\
+Supported Aspect Ratios     & Only Square ($N \times N$)         & Arbitrary Rectangular ($M \times N$) \\
+Decryption Method           & Repeat forward loops               & Direct 4-stage formula \\
+PNG Size Increase           & $+336.7\%$ ($735.7\text{ KB}$)     & $\mathbf{+8.01\%}$ ($181.9\text{ KB}$) \\
+WebP Size Increase          & $+352.7\%$ ($439.8\text{ KB}$)     & $\mathbf{+9.33\%}$ ($106.2\text{ KB}$) \\
+JPEG Size Increase          & $+444.7\%$ ($166.6\text{ KB}$)     & $+60.14\%$ ($48.9\text{ KB}$) \\
+Fixed Origin $(0, 0)$       & Yes (top-left tile never moves)    & No (shifted by $(r_m, r_n)$) \\
+Client Decoding Time        & Slow ($> 50\text{ ms}$, freezes UI)& Fast ($\mathbf{0.32\text{ ms}}$) \\
+Feasibility for Web         & Too heavy, expensive bandwidth     & Fast and practical \\
+\bottomrule
+\end{tabular*}
+\end{table}
+
+\paragraph{Why Tile Scrambling Keeps File Sizes Small:}
+\begin{itemize}
+    \item \textbf{Pixel Scrambling Breaks Compression:} Image compressors look for patterns, such as neighboring pixels with similar colors. When individual pixels are shuffled, all color patterns disappear and the image looks like random static noise. The compressor cannot find any repeated patterns, which causes a $168.5\text{ KB}$ PNG image to swell to $735.7\text{ KB}$ ($+336\%$).
+    \item \textbf{Tile Scrambling Keeps Local Patterns:} In our method, each tile (for example, $34 \times 34$ pixels) remains completely intact inside. The pixels inside the tile still have their original colors and smooth transitions. Artificial sharp edges only appear where tiles touch each other. Because of this, the PNG file size only increases by around $7\%$ to $8\%$, and WebP increases by only $9\%$ to $19\%$.
+    \item \textbf{JPEG Compatibility:} JPEG compresses images using $8 \times 8$ pixel blocks. In Scenarios 2 and 3, our tile sizes ($48 \times 32$ and $32 \times 32$) are exact multiples of 8. Because the tile edges line up with JPEG's internal compression blocks, the scrambled JPEG file only increased by $1.1\%$ to $2.2\%$.
+\end{itemize}
+
+\subsection{Image Quality and Reversibility}
+To confirm that decryption restores the exact original image without any blurred pixels or color changes, we calculated the Mean Squared Error (MSE) and Peak Signal-to-Noise Ratio (PSNR):
+\begin{equation}
+    \text{MSE} = \frac{1}{W \cdot H \cdot C} \sum_{x=0}^{W-1} \sum_{y=0}^{H-1} \sum_{c=0}^{C-1} \left| P_{\text{original}}(x, y, c) - P_{\text{recovered}}(x, y, c) \right|^2 = 0.0
+\end{equation}
+\begin{equation}
+    \text{PSNR} = 10 \cdot \log_{10} \left( \frac{255^2}{\text{MSE}} \right) = \infty\text{ dB}
+\end{equation}
+For all tested images, the difference between the original and recovered pixels was strictly zero.
+
+In addition, our repository includes a test suite of $148$ automated tests:
+\begin{itemize}
+    \item $44$ unit tests verifying parameter validation and math properties.
+    \item $41$ stress tests with unusual image shapes (e.g., $1 \times 100$ strips, prime-dimension grids like $97 \times 89$, and matrices with negative determinants).
+    \item $18$ cross-language tests ensuring that Python scrambling and JavaScript descrambling match byte-for-byte.
+    \item A 4-panel visual test page that shows the original, scrambled, decrypted, and pixel-difference canvas side by side.
+\end{itemize}
+All $148$ tests pass with 100\% success.
+
+\subsection{How this Protects against Web Scraping}
+Our approach does not try to be an unbreakable military-grade cipher. Instead, its purpose is to make scraping inconvenient and expensive for attackers while keeping costs very low for legitimate users:
+\begin{enumerate}
+    \item \textbf{Stops Simple Scrapers (\texttt{curl}, \texttt{requests}):} Scrapers that simply download files from URLs will only get scrambled image files. They cannot use these images directly because the contents are shuffled.
+    \item \textbf{Stops Direct Hotlinking:} Third-party pirate sites cannot hotlink our image URLs into regular \texttt{<img>} tags. Without our custom JavaScript code running on their page, the image will display as a scrambled mosaic on their website.
+    \item \textbf{Forces Bots to Use Heavy Browsers:} To get clean images, an attacker must run a full headless browser (such as Puppeteer or Playwright) to execute the JavaScript code on every page. Running a headless browser takes significantly more CPU and RAM than sending a simple HTTP request, making large-scale scraping of thousands of pages much slower and more expensive.
+    \item \textbf{Large Jigsaw Puzzle Search Space:} With $216$ tiles (in an $18 \times 12$ grid), the number of possible arrangements is $216! \approx 10^{411}$. Even specialized puzzle-solving algorithms struggle when images contain large areas of flat colors (such as skies, white backgrounds, or simple manga panels).
+    \item \textbf{No Stationary Anchor Tile:} In simpler transforms like SRT, the top-left tile at $(0, 0)$ never moves, which could give an attacker a starting point to solve the puzzle. In our GRT implementation, the offset $(r_m, r_n)$ moves the top-left tile to a different location, leaving no fixed tiles.
+\end{enumerate}
+
+\newpage
+
+% ==============================================================================
+% SECTION V: CONCLUSION, LIMITATIONS, AND FUTURE WORK
+% Authors: Ha Dang Huy, Nguyen Minh Duc
+% ==============================================================================
+\section{Conclusion, Limitations, and Future Work}
+% [Assigned to Ha Dang Huy, Nguyen Minh Duc]
+
+\subsection{Summary}
+In this project, we built and tested an anti-scraping image protection system based on the Generalized Rectangular Transform (GRT):
+\begin{itemize}
+    \item We implemented a Python scrambling script for the server and a vanilla JavaScript decoding script for HTML5 Canvas in the browser.
+    \item By using translation offsets $(r_m, r_n)$, we fixed the stationary origin problem where the top-left tile never moved in earlier transforms.
+    \item Client decoding is very fast, taking only $0.32\text{ ms}$ to $0.51\text{ ms}$, which fits comfortably within a standard 60 FPS frame time ($16.6\text{ ms}$) without slowing down the webpage.
+    \item Unlike pixel scrambling methods that inflate file sizes by $300\%$ to $600\%$, tile scrambling keeps the file size increase to only $7\%$ to $8\%$ on PNG and $9\%$ to $19\%$ on WebP, while still allowing exact, lossless reconstruction ($\text{MSE} = 0.0, \text{PSNR} = \infty$).
+\end{itemize}
+
+\subsection{Limitations}
+We also identified several practical limitations:
+\begin{itemize}
+    \item \textbf{Screenshots (The Analog Hole):} Once an image is displayed cleanly on the user's screen, nothing can stop a user from taking a manual screenshot (using PrintScreen or snipping tools). This defense is meant to stop automated bulk downloading, not individual manual screenshots.
+    \item \textbf{Grid Divisibility:} The image dimensions must be divisible by the grid dimensions $M$ and $N$. If they are not, extra border pixels must be padded before scrambling.
+    \item \textbf{Key Delivery:} If the transform keys $(a, b, c, d, r_m, r_n)$ are sent in clear text in public API responses without authentication, an attacker could write a script to read the keys and decrypt the files automatically.
+\end{itemize}
+
+\subsection{Future Work}
+In future improvements, we plan to:
+\begin{itemize}
+    \item \textbf{Session-Bound Keys:} Connect transform keys to user session tokens or one-time tokens so keys cannot be easily reused by bots.
+    \item \textbf{WebGL / WebGPU Acceleration:} Write a WebGL or WebGPU shader for decoding, which could make it possible to decode very high-resolution images (like 4K photos) or video tiles even faster.
+    \item \textbf{Invisible Watermarking:} Add a faint, imperceptible digital watermark with the user's ID into the tiles before scrambling, so that if someone takes a screenshot and reposts it, the source can still be identified.
+\end{itemize}
+
+\newpage
+
+% ==============================================================================
+% REFERENCES
+% ==============================================================================
+\begin{thebibliography}{99}
+
+\bibitem{lan2025}
+R.~Lan and X.~Wang, ``A Novel Multi-Image Encryption Scheme Using Generalized Rectangular Transform and Advanced 5-D Hyperchaotic Map,'' \emph{IEEE Access}, vol.~13, pp.~1--14, 2025.
+
+\bibitem{hariyanto2016}
+D.~Hariyanto and R.~Rahim, ``Arnold's Cat Map Algorithm in Digital Image Encryption,'' \emph{Journal of Physics: Conference Series}, vol.~930, no.~1, p.~012038, 2017.
+
+\bibitem{chen2004}
+G.~Chen, Y.~Mao, and C.~K.~Chui, ``A symmetric image encryption scheme based on 3D chaotic cat maps,'' \emph{Chaos, Solitons \& Fractals}, vol.~21, no.~3, pp.~749--761, 2004.
+
+\bibitem{pareek2006}
+N.~K.~Pareek, V.~Patidar, and K.~K.~Sud, ``Image encryption using chaotic logistic map,'' \emph{Image and Vision Computing}, vol.~24, no.~9, pp.~926--934, 2006.
+
+\end{thebibliography}
 
 \end{document}
