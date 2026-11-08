@@ -39,3 +39,6 @@ validation_harness.html
 benchmark_overhead.py
 srt_server.py
 isrt_client.js
+
+# macOS system files
+.DS_Store
