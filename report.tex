@@ -4,6 +4,41 @@
 \usepackage[top=2.5cm, bottom=2.5cm, left=2.5cm, right=2.5cm]{geometry}
 \usepackage{hyperref}
 \usepackage{amsmath}
+\usepackage{indentfirst}
+\usepackage{listings}
+\usepackage{tabularx}
+\usepackage{booktabs}
+\usepackage{amssymb}
+\usepackage{subcaption}
+\usepackage{xcolor} % for syntax highlighting colors
+\usepackage{float}
+
+% Define a clean, professional palette
+\definecolor{codebg}{rgb}{0.97, 0.97, 0.98}
+\definecolor{codeblue}{rgb}{0.0, 0.2, 0.8}
+\definecolor{codegreen}{rgb}{0.13, 0.55, 0.13}
+\definecolor{codegray}{rgb}{0.45, 0.45, 0.45}
+\definecolor{codepurple}{rgb}{0.65, 0.1, 0.5}
+
+\lstset{
+    language=Python,
+    basicstyle=\ttfamily\footnotesize,            % Enforces monospaced font
+    backgroundcolor=\color{codebg},              % Optional light background container
+    keywordstyle=\color{codeblue}\bfseries,       % Keywords: def, return, if
+    commentstyle=\color{codegreen}\itshape,       % Comments: # ...
+    stringstyle=\color{codepurple},               % Strings: 'edge'
+    numbers=left,
+    numberstyle=\tiny\color{codegray},
+    numbersep=8pt,
+    stepnumber=1,
+    showstringspaces=false,
+    breaklines=true,
+    breakatwhitespace=true,
+    tabsize=4,
+    % Listings lacks modern Python 3 built-ins and type hints by default:
+    morekeywords={tuple, int, float, str, bool, list, dict, set} 
+}
+
 \date{}
 
 \hypersetup{
@@ -22,7 +57,7 @@
   \centering
   {\large\textbf{UNIVERSITY OF SCIENCE AND TECHNOLOGY OF HANOI}\par}
   \vspace{1.5cm}
-  \includegraphics[width=0.72\textwidth]{usth_logo.png}\par
+  \includegraphics[width=0.72\textwidth]{figures/usth_logo.png}\par
   \vspace{2.0cm}
   {\LARGE\textbf{Application Of Tile Transposition Ciphers In Anti-Scraping Image Protection System}\par}
   \vspace{2.2cm}
@@ -44,7 +79,7 @@
   {\large Academic Year: 2026 -- 2027\par}
 \end{titlepage}
 
-% ============ TABLE OF CONTENTS Pages=========
+% ============ TABLE OF CONTENTS Page =========
 \pagenumbering{arabic}
 \setcounter{page}{1}
 \tableofcontents
@@ -52,13 +87,13 @@
 
 % ====== Introduction page =========
 
-\section{Introduction}
+
+\section{Introduction \& Project Motivation}
 \subsection{Problem Statement: Automated Image Scraping and Economic Threats}
-Images are widely stored and distributed via websites and Content Delivery Networks (CDNs), which enable images to be loaded and collected automatically at low processing cost. This may allow the unauthorized and illegal redistribution of images. Images are widely stored and distributed via websites and Content Delivery Networks (CDNs), which enable images to be loaded and collected automatically at low processing cost. This may allow unauthorized and illegal redistribution of images. In addition, existing image-protection methods may involve a trade-off between protection and performance. In pixel-chaotic ciphers, shuffling individual pixels across the entire image destroys spatial correlation, leading to an increase in compressed file size. Therefore, websites need to balance image protection, bandwidth costs, and display performance.
+Images are widely stored and distributed via websites and Content Delivery Networks (CDNs), which enable images to be loaded and collected automatically at low processing cost. This may allow unauthorized and illegal redistribution of images. In addition, existing image-protection methods may involve a trade-off between protection and performance. In pixel-chaotic ciphers, shuffling individual pixels across the entire image destroys spatial correlation, leading to an increase in compressed file size. Therefore, websites need to balance image protection, bandwidth costs, and display performance.
 
-These challenges motivate the exploration of tile-level image scrambling using the Generalized Rectangular Transform (GRT), which aims to protect image assets while maintaining efficient reconstruction.
+\subsection{Project Objectives}
 
-\subsection{Objectives}
 \begin{itemize}
     \item Reproduce and implement GRT-based tile-level image scrambling on the server (Python) and client-side viewport reconstruction (JavaScript Canvas).
     \item Validate the reversibility of GRT and confirm pixel-perfect image recovery with no quality loss.
@@ -67,6 +102,8 @@ These challenges motivate the exploration of tile-level image scrambling using t
 
 \section{Theoretical Background}
 \subsection{From SRT to GRT}
+\label{sec:GRT}
+
 Special Rectangular Transform (SRT) is a transformation method used to rearrange pixel positions, allowing accurate image reconstruction through its corresponding inverse transformation (ISRT) \cite{Lan2025ANM}. The SRT matrix is expressed as:
 \begin{equation}
 R_{\mathrm{SRT}} =
@@ -76,54 +113,92 @@ R_{\mathrm{SRT}} =
     \end{bmatrix}
 \label{eq:srt}
 \end{equation}
-\noindent where \(r\) and \(s\) are two integer parameters that determine the transformation matrix. However, its transformation matrix is constrained because the upper-left element is fixed at 1, resulting in only two degrees of freedom. To address this limitation, we adopt the GRT to enhance the flexibility of the transformation matrix.
+\noindent where \(r\) and \(s\) are two integer parameters that determine the transformation matrix. However, its transformation matrix is constrained because the upper-left element is fixed at 1, resulting in only two degrees of freedom. To address this limitation, we adopt the GRT to enhance the flexibility of the transformation matrix and introduces a translation offset $(r_m, r_n)$ to displace the origin (Figure~\ref{fig:grt_displaced}).
 
-Unlike SRT, GRT involves 4 parameters \((a,b,c,d)\), providing 4 degrees of freedom and greater flexibility in the transformation matrix \cite{Lan2025ANM}. The GRT Transform Matrix rearranges pixel coordinates without directly changing the pixel values and is expressed as:
+
+
+Unlike SRT, GRT involves 4 parameters \((a,b,c,d)\), providing 4 degrees of freedom and greater flexibility in the transformation matrix \cite{Lan2025ANM}:
+
 \begin{equation}
-\begin{bmatrix}
-x\\y
-\end{bmatrix}_{n+1}
-=
-\left\{
-\begin{bmatrix}
-a&b\\c&d
-\end{bmatrix}
-\begin{bmatrix}
-x\\y
-\end{bmatrix}_n
-+
-\begin{bmatrix}
-r_m\\r_n
-\end{bmatrix}
-\right\}
-\bmod
-\begin{bmatrix}
-M\\N
-\end{bmatrix}
+\begin{bmatrix} x \\ y \end{bmatrix}_{n+1} = 
+\left\{ 
+    \begin{bmatrix} a & b \\ c & d \end{bmatrix} 
+    \begin{bmatrix} x \\ y \end{bmatrix}_n + 
+    \begin{bmatrix} r_m \\ r_n \end{bmatrix} 
+\right\} \bmod 
+\begin{bmatrix} M \\ N \end{bmatrix}
 \end{equation}
-\noindent where \((a,b,c,d)\) are 4 transformation parameters, \((x, y)_n\) are original pixel coordinates, \((x, y)_{n+1}\) are transformed pixel coordinates, \((r_m, r_n)\) are coordinate shifting offsets, and \(M\), \(N\) are image height and width. However, the parameter set \((a,b,c,d)\) mus satisfy 4 mathematical conditions \cite{Lan2025ANM}. These conditions depend on the image dimensions, the greatest common divisor, and the matrix determinant to ensure a valid rectangular transformation.
 
-To restore original pixel coordinates, we adopt the Inverse GRT (IGRT), which resolves the naïve inverse transform problem that can lead to incorrect pixel coordinates in rectangular images. Moreover, IGRT does not require prior knowledge of the transformation matrix's periodicity.
+\noindent where, \((a,b,c,d)\) are 4 transformation parameters, $G = \begin{bmatrix} a & b \\ c & d \end{bmatrix}$ is a general $2 \times 2$ integer matrix whose determinant $\|G\| = ad - bc$ does not need to equal $1$, \((x, y)_n\) are original pixel coordinates, \((x, y)_{n+1}\) are transformed tile coordinates, \((r_m, r_n)\) are coordinate shifting offsets (Figure~\ref{fig:srt_vs_grt}), and \(M\), \(N\) are image height and width. However, the parameter set \((a,b,c,d)\) mus satisfy these 4 mathematical conditions \cite{Lan2025ANM}. 
+
+\begin{enumerate}
+    \item \textbf{Condition 1 --- $(b \bmod h = 0)$ or $(c \bmod v = 0)$.}
+    \item \textbf{Condition 2 --- $\gcd(\|G\|, p) = 1$.}
+    \item \textbf{Condition 3 --- $\gcd(a, h) = 1$.}
+    \item \textbf{Condition 4 --- $\gcd(d, v) = 1$.}
+\end{enumerate}
+
+\noindent where $p = \gcd(M, N)$ is the greatest common divisor of the grid dimensions, and $h = M/p, v = N/p$ represent the irreducible aspect ratio. These conditions ensure a one-to-one mapping across rectangular grids without tile collisions.
+
+\subsection{Image decryption via Inverse GRT (IGRT)}
+\label{sec:IGRT}
+
+To restore the original coordinates $(x, y)_n$ from a scrambled tile $(x, y)_{n+1}$, we apply the 4-stage Inverse GRT (IGRT) from the corollary~\cite{Lan2025ANM} (Figure~\ref{fig:igrt_4stages}):
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{figures/igrt_4stages_compacted.drawio.pdf}
+    \caption{4-Stage Single-Pass Coordinate Decryption in O(1) Time Complexity.}
+    \label{fig:igrt_4stages}
+\end{figure}
 
 \subsection{Key Terminology}
 \begin{itemize}
     \item \textbf{Pixel Permutation} rearranges pixel positions without changing their values. In GRT, a flexible transformation matrix is used to disrupt spatial correlations between neighboring pixels \cite{Lan2025ANM}.
-    \item \textbf{Pixel Diffusion} modifies pixel values rather than their positions, typically following the permutation stage in image encryption \cite{Lan2025ANM}.
     \item \textbf{Block-Based Scrambling} is applied in our project by splitting the image into several blocks or tiles and then permuting their positions. The original image can be reconstructed by restoring the blocks to their original positions.
-    \item \textbf{Reversibility} allows the reconstruction of the original image arrangement, while \textbf{Bijective Mapping} ensures a "one-to-one" correspondence between original and transformed positions, meaning that each original position maps to exactly one transformed position and vice versa. This prevents duplicated or missing positions. Therefore, scrambled blocks can be restored to their original positions.
-\end{itemize}
+    \item \textbf{Reversibility} allows the reconstruction of the original image, while \textbf{Bijective Mapping} ensures a "one-to-one" correspondence between original and transformed positions.
+\end{itemize}   
+
+
+\begin{figure}[H]
+    \centering
+    % --- Left: SRT ---
+    \begin{subfigure}[t]{0.20\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{figures/t3_srt_annotated.png}
+        \caption{SRT: Tile $(0,0)$ (red box) remains frozen at the top-left corner.}
+        \label{fig:srt_frozen}
+    \end{subfigure}
+    \hfill
+    % --- Middle: Original ---
+    \begin{subfigure}[t]{0.20\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{figures/t3.png}
+        \caption{Original unencrypted source image.}
+        \label{fig:t3_orig}
+    \end{subfigure}
+    \hfill
+    % --- Right: GRT ---
+    \begin{subfigure}[t]{0.20\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{figures/t3_grt_annotated.png}
+        \caption{GRT: $(0,0)$ is displaced to (red box); a new tile (blue box) occupies $(0,0)$.}
+        \label{fig:grt_displaced}
+    \end{subfigure}
+    
+    \caption{Visual comparison of origin displacement between (a) Special Rectangular Transform (SRT), (b) the original image, and (c) Generalized Rectangular Transform (GRT).}
+    \label{fig:srt_vs_grt}
+\end{figure}
 
 
 \newpage
 \begin{thebibliography}{9}
+
 \bibitem{Lan2025ANM}
-Y.-C. Lan and C.-M. Wang,
-``A Novel Multi-Image Encryption Scheme Using
-Generalized Rectangular Transform and Advanced
-5-D Hyperchaotic Map,''
-\textit{IEEE Access}, vol. 13,
-pp. 43316--43337, 2025.
-doi: 10.1109/ACCESS.2025.3547891.
+J.~Lan and X.~Wang, ``Generalized Rectangular Transform and Its Application in Image Encryption,'' \emph{IEEE Access}, 2025.
+
+\bibitem{arnold1968}
+V.~I. Arnold and A.~Avez, \emph{Ergodic Problems of Classical Mechanics}. New York, NY, USA: Benjamin, 1968.
 
 \end{thebibliography}
 
