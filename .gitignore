@@ -1,7 +1,8 @@
 # Experiments
 index.html
-figures/
 CS_crypto.*
+playground/
+tests/
 
 # Virtual environments
 .venv/
@@ -28,17 +29,7 @@ htmlcov/
 
 # Agent instructions & notes
 AGENTS.md
-example.md
-playground/
-*agents/
-benchmark_results.json
-
-TEST*
-validation_harness.html
-
-benchmark_overhead.py
-srt_server.py
-isrt_client.js
+archive/
 
 # macOS system files
 .DS_Store

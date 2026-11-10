@@ -4,6 +4,43 @@
 \usepackage[top=2.5cm, bottom=2.5cm, left=2.5cm, right=2.5cm]{geometry}
 \usepackage{hyperref}
 \usepackage{amsmath}
+\usepackage{indentfirst}
+\usepackage{listings}
+\usepackage{tabularx}
+\usepackage{booktabs}
+\usepackage{amssymb}
+\usepackage{subcaption}
+\usepackage{xurl}
+\usepackage[most,theorems]{tcolorbox}
+\usepackage{xcolor} % for syntax highlighting colors
+\usepackage{float}
+
+% Define a clean, professional palette
+\definecolor{codebg}{rgb}{0.97, 0.97, 0.98}
+\definecolor{codeblue}{rgb}{0.0, 0.2, 0.8}
+\definecolor{codegreen}{rgb}{0.13, 0.55, 0.13}
+\definecolor{codegray}{rgb}{0.45, 0.45, 0.45}
+\definecolor{codepurple}{rgb}{0.65, 0.1, 0.5}
+
+\lstset{
+    language=Python,
+    basicstyle=\ttfamily\footnotesize,            % Enforces monospaced font
+    backgroundcolor=\color{codebg},              % Optional light background container
+    keywordstyle=\color{codeblue}\bfseries,       % Keywords: def, return, if
+    commentstyle=\color{codegreen}\itshape,       % Comments: # ...
+    stringstyle=\color{codepurple},               % Strings: 'edge'
+    numbers=left,
+    numberstyle=\tiny\color{codegray},
+    numbersep=8pt,
+    stepnumber=1,
+    showstringspaces=false,
+    breaklines=true,
+    breakatwhitespace=true,
+    tabsize=4,
+    % Listings lacks modern Python 3 built-ins and type hints by default:
+    morekeywords={tuple, int, float, str, bool, list, dict, set} 
+}
+
 \date{}
 
 \hypersetup{
@@ -22,7 +59,7 @@
   \centering
   {\large\textbf{UNIVERSITY OF SCIENCE AND TECHNOLOGY OF HANOI}\par}
   \vspace{1.5cm}
-  \includegraphics[width=0.72\textwidth]{usth_logo.png}\par
+  \includegraphics[width=0.72\textwidth]{figures/usth_logo.png}\par
   \vspace{2.0cm}
   {\LARGE\textbf{Application Of Tile Transposition Ciphers In Anti-Scraping Image Protection System}\par}
   \vspace{2.2cm}
@@ -44,7 +81,7 @@
   {\large Academic Year: 2026 -- 2027\par}
 \end{titlepage}
 
-% ============ TABLE OF CONTENTS Pages=========
+% ============ TABLE OF CONTENTS Page =========
 \pagenumbering{arabic}
 \setcounter{page}{1}
 \tableofcontents
@@ -52,21 +89,23 @@
 
 % ====== Introduction page =========
 
+
 \section{Introduction}
 \subsection{Problem Statement: Automated Image Scraping and Economic Threats}
-Images are widely stored and distributed via websites and Content Delivery Networks (CDNs), which enable images to be loaded and collected automatically at low processing cost. This may allow the unauthorized and illegal redistribution of images. Images are widely stored and distributed via websites and Content Delivery Networks (CDNs), which enable images to be loaded and collected automatically at low processing cost. This may allow unauthorized and illegal redistribution of images. In addition, existing image-protection methods may involve a trade-off between protection and performance. In pixel-chaotic ciphers, shuffling individual pixels across the entire image destroys spatial correlation, leading to an increase in compressed file size. Therefore, websites need to balance image protection, bandwidth costs, and display performance.
+Images are widely stored and distributed via websites and Content Delivery Networks (CDNs), which enable images to be loaded and collected automatically at low processing cost \cite{uzun2023scraping}. This may allow unauthorized and illegal redistribution of images \cite{shan2023glaze}. In addition, existing image-protection methods may involve a trade-off between protection and performance. In pixel-chaotic ciphers, shuffling individual pixels across the entire image destroys spatial correlation, leading to an increase in compressed file size. Therefore, websites need to balance image protection, bandwidth costs, and display performance.
 
-These challenges motivate the exploration of tile-level image scrambling using the Generalized Rectangular Transform (GRT), which aims to protect image assets while maintaining efficient reconstruction.
+\subsection{Project Objectives}
 
-\subsection{Objectives}
 \begin{itemize}
-    \item Reproduce and implement GRT-based tile-level image scrambling on the server (Python) and client-side viewport reconstruction (JavaScript Canvas).
-    \item Validate the reversibility of GRT and confirm pixel-perfect image recovery with no quality loss.
-    \item Measure computational latency, memory usage, and compression overhead across standard web formats (PNG, WebP, JPEG) to assess its feasibility for web-based image protection.
+    \item Adapt and implement GRT (Generalized Rectangular Transform)-based tile-level image scrambling on the server and client-side viewport reconstruction (Section~\ref{sec:architecture}).
+    \item Validate the reversibility of GRT and confirm pixel-perfect image recovery with no quality loss (Section~\ref{sec:GRT}).
+    \item Measure computational latency, memory usage, and compression overhead across standard web formats (PNG, WebP, JPEG) to assess its feasibility for web-based image protection (Section~\ref{sec:benchmark_analysis}).
 \end{itemize}
 
 \section{Theoretical Background}
 \subsection{From SRT to GRT}
+\label{sec:GRT}
+
 Special Rectangular Transform (SRT) is a transformation method used to rearrange pixel positions, allowing accurate image reconstruction through its corresponding inverse transformation (ISRT) \cite{Lan2025ANM}. The SRT matrix is expressed as:
 \begin{equation}
 R_{\mathrm{SRT}} =
@@ -76,54 +115,282 @@ R_{\mathrm{SRT}} =
     \end{bmatrix}
 \label{eq:srt}
 \end{equation}
-\noindent where \(r\) and \(s\) are two integer parameters that determine the transformation matrix. However, its transformation matrix is constrained because the upper-left element is fixed at 1, resulting in only two degrees of freedom. To address this limitation, we adopt the GRT to enhance the flexibility of the transformation matrix.
+\noindent where \(r\) and \(s\) are two integer parameters that determine the transformation matrix. However, its transformation matrix is constrained because the upper-left element is fixed at 1, resulting in only two degrees of freedom. To address this limitation, we adopt the GRT to enhance the flexibility of the transformation matrix and introduces a translation offset $(r_m, r_n)$ to displace the origin (Figure~\ref{fig:grt_displaced}).
 
-Unlike SRT, GRT involves 4 parameters \((a,b,c,d)\), providing 4 degrees of freedom and greater flexibility in the transformation matrix \cite{Lan2025ANM}. The GRT Transform Matrix rearranges pixel coordinates without directly changing the pixel values and is expressed as:
+
+
+Unlike SRT, GRT involves 4 parameters \((a,b,c,d)\), providing 4 degrees of freedom and greater flexibility in the transformation matrix \cite{Lan2025ANM}:
+
 \begin{equation}
-\begin{bmatrix}
-x\\y
-\end{bmatrix}_{n+1}
-=
-\left\{
-\begin{bmatrix}
-a&b\\c&d
-\end{bmatrix}
-\begin{bmatrix}
-x\\y
-\end{bmatrix}_n
-+
-\begin{bmatrix}
-r_m\\r_n
-\end{bmatrix}
-\right\}
-\bmod
-\begin{bmatrix}
-M\\N
-\end{bmatrix}
+\begin{bmatrix} x \\ y \end{bmatrix}_{n+1} = 
+\left\{ 
+    \begin{bmatrix} a & b \\ c & d \end{bmatrix} 
+    \begin{bmatrix} x \\ y \end{bmatrix}_n + 
+    \begin{bmatrix} r_m \\ r_n \end{bmatrix} 
+\right\} \bmod 
+\begin{bmatrix} M \\ N \end{bmatrix}
 \end{equation}
-\noindent where \((a,b,c,d)\) are 4 transformation parameters, \((x, y)_n\) are original pixel coordinates, \((x, y)_{n+1}\) are transformed pixel coordinates, \((r_m, r_n)\) are coordinate shifting offsets, and \(M\), \(N\) are image height and width. However, the parameter set \((a,b,c,d)\) mus satisfy 4 mathematical conditions \cite{Lan2025ANM}. These conditions depend on the image dimensions, the greatest common divisor, and the matrix determinant to ensure a valid rectangular transformation.
+\label{eq:grt}
 
-To restore original pixel coordinates, we adopt the Inverse GRT (IGRT), which resolves the naïve inverse transform problem that can lead to incorrect pixel coordinates in rectangular images. Moreover, IGRT does not require prior knowledge of the transformation matrix's periodicity.
+\noindent where \((a,b,c,d)\) are 4 transformation parameters, $G = \begin{bmatrix} a & b \\ c & d \end{bmatrix}$ is a general $2 \times 2$ integer matrix whose determinant $\|G\|$ does not need to equal $1$, \((x, y)_n\) are original pixel coordinates, \((x, y)_{n+1}\) are transformed tile coordinates, \((r_m, r_n)\) are coordinate shifting offsets (Figure~\ref{fig:srt_vs_grt}), and \(M\), \(N\) are image height and width. However, the parameter set \((a,b,c,d)\) must satisfy these 4 mathematical conditions \cite{Lan2025ANM}. 
+
+\begin{enumerate}
+    \item \textbf{Condition 1 --- $(b \bmod h = 0)$ or $(c \bmod v = 0)$.}
+    \item \textbf{Condition 2 --- $\gcd(\|G\|, p) = 1$.}
+    \item \textbf{Condition 3 --- $\gcd(a, h) = 1$.}
+    \item \textbf{Condition 4 --- $\gcd(d, v) = 1$.}
+\end{enumerate}
+\label{4_conditions}
+
+\noindent where $p = \gcd(M, N)$ is the greatest common divisor of the grid dimensions, and $h = M/p, v = N/p$ represent the irreducible aspect ratio. These conditions ensure a one-to-one mapping across rectangular grids without tile collisions.
+
+\subsection{Image decryption via Inverse GRT (IGRT)}
+\label{sec:IGRT}
+
+To restore the original coordinates $(x, y)_n$ from a scrambled tile $(x, y)_{n+1}$, we apply the 4-stage Inverse GRT (IGRT) from the corollary~\cite{Lan2025ANM} (Figure~\ref{fig:igrt_4stages}):
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.9\textwidth]{figures/igrt_4stages_compacted.drawio.pdf}
+    \caption{4-Stage Single-Pass Coordinate Decryption in O(1) Time Complexity.}
+    \label{fig:igrt_4stages}
+\end{figure}
 
 \subsection{Key Terminology}
 \begin{itemize}
     \item \textbf{Pixel Permutation} rearranges pixel positions without changing their values. In GRT, a flexible transformation matrix is used to disrupt spatial correlations between neighboring pixels \cite{Lan2025ANM}.
-    \item \textbf{Pixel Diffusion} modifies pixel values rather than their positions, typically following the permutation stage in image encryption \cite{Lan2025ANM}.
-    \item \textbf{Block-Based Scrambling} is applied in our project by splitting the image into several blocks or tiles and then permuting their positions. The original image can be reconstructed by restoring the blocks to their original positions.
-    \item \textbf{Reversibility} allows the reconstruction of the original image arrangement, while \textbf{Bijective Mapping} ensures a "one-to-one" correspondence between original and transformed positions, meaning that each original position maps to exactly one transformed position and vice versa. This prevents duplicated or missing positions. Therefore, scrambled blocks can be restored to their original positions.
+    \item \textbf{Tile-Based Scrambling} splits the image into several tiles and then permutes their positions. The original image can be reconstructed by restoring the tiles to their original positions.
+    \item \textbf{Reversibility} allows the reconstruction of the original image, while \textbf{Bijective Mapping} ensures ``one-to-one" correspondence between original and transformed positions.
+\end{itemize}   
+
+
+\begin{figure}[H]
+    \centering
+    % --- Left: SRT ---
+    \begin{subfigure}[t]{0.27\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{figures/t3_srt_annotated.png}
+        \caption{SRT: Tile $(0,0)$ (red box) remains frozen at the top-left corner.}
+        \label{fig:srt_frozen}
+    \end{subfigure}
+    \hfill
+    % --- Middle: Original ---
+    \begin{subfigure}[t]{0.27\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{figures/t3.png}
+        \caption{Original unencrypted source image.}
+        \label{fig:t3_orig}
+    \end{subfigure}
+    \hfill
+    % --- Right: GRT ---
+    \begin{subfigure}[t]{0.27\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{figures/t3_grt_annotated.png}
+        \caption{GRT: $(0,0)$ is displaced to (red box); a new tile (blue box) occupies $(0,0)$.}
+        \label{fig:grt_displaced}
+    \end{subfigure}
+    
+    \caption{Visual comparison of origin displacement between (a) Special Rectangular Transform (SRT), (b) the original image, and (c) Generalized Rectangular Transform (GRT).}
+    \label{fig:srt_vs_grt}
+\end{figure}
+
+
+%----------------------
+\section{System Architecture \& Application}
+\label{sec:architecture}
+
+\subsection{Secret Delivery}
+    To protect web images, we propose breaking the pipeline as a symmetric permutation cryptosystem $(\mathcal{P}, \mathcal{C}, \mathcal{K}, \mathrm{Enc}_K, \mathrm{Dec}_K)$ operating over a two-channel delivery protocol (Figure~\ref{fig:system_architecture}).
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\textwidth]{figures/system_architecture_compacted.drawio.pdf}
+    \caption{Cryptographic delivery across server, network, and client.}
+    \label{fig:system_architecture}
+\end{figure}
+
+\begin{itemize}
+    \item \textbf{Channel A (Public CDN Asset):} Where automated bots, \texttt{curl} scripts, or crawlers fetching the image URL directly would receive only an unusable grid of shuffled tiles.
+    \item \textbf{Channel B (Side-Channel for Key Delivery):} Delivers the secret $K = (M, N, a, b, c, d, r_m, r_n)$ and original dimensions $(W_0, H_0)$ separately to the authorized active browser session.
 \end{itemize}
 
+% (\texttt{grt\_server.py})
+% (\texttt{igrt\_client.js})
+
+\subsection{Encryption \& Decryption Lifecycle (Figure~\ref{fig:system_architecture})}
+The  cryptographic pipeline executes five stages across the server and client:
+\begin{enumerate}\setlength{\itemsep}{1pt}\setlength{\parskip}{0pt}
+    \item \textbf{Padding:} If the source image dimensions $(W_0, H_0)$ are not divisible by $(M, N)$, the server will pad the outer edges until every tile is identical in size.
+    \item \textbf{Key Generation:} The server generates a secret key $K = (a, b, c, d, r_m, r_n)$ satisfying \hyperref[4_conditions]{4 conditions}.
+    \item \textbf{Encryption (Forward GRT):} Plaintext tiles at $(x, y)_n$ is mapped to its ciphertext coordinate $(x, y)_{n+1}$ via the affine transformation in Eq.~(\hyperref[eq:grt]{2}).
+    \item \textbf{Decryption Precomputation:} Upon receiving secret key $K$, the client evaluates the 4-stage IGRT corollary (Figure~\ref{fig:igrt_4stages}) once per axis, storing the inverse mapping in 1D lookup tables in $\mathcal{O}(M+N)$ time.
+    \item \textbf{Decryption (Plaintext Recovery):} The client applies the inverse permutation to restore all tiles to their original coordinates and crops the image back to $(W_0, H_0)$, satisfying $\mathrm{Dec}_K(\mathrm{Enc}_K(P)) = P$.
+\end{enumerate}
+
+\medskip
+\noindent\footnotesize\textbf{Note:} The complete backend (\texttt{grt\_server.py}) and frontend (\texttt{igrt\_client.js}) source code is provided in the \hyperref[artifact_box]{Source Code \& Artifact Availability} repository.\normalsize
+
+\section{Experimental Benchmarking \& Analysis}
+\label{sec:benchmark_analysis}
+
+\smallskip
+\noindent\footnotesize\textbf{Note:} The experimental setup and benchmark scripts used to collect the latency and compression overhead on this Section 4 are hosted in the \hyperref[artifact_box]{Source Code \& Artifact Availability} repository.\normalsize
+
+\subsection{Decryption Recovery Analysis}
+
+A valid symmetric cipher must be strictly invertible: decrypting a ciphertext with the correct key must return the exact original plaintext. We evaluated our implementation across three standard resolutions:
+
+\begin{enumerate}\setlength{\itemsep}{1pt}\setlength{\parskip}{0pt}
+
+    \item \textbf{SD 480p ($480 \times 854$, padded to $480 \times 875$):} $M \times N = 30 \times 25$ grid ($750$ tiles of $16 \times 35\text{ px}$).
+    
+    \item \textbf{HD 720p ($720 \times 1280$):} $M \times N = 36 \times 40$ grid ($1440$ tiles of $20 \times 32\text{ px}$).
+    
+    \item \textbf{FHD 1080p ($1920 \times 1080$):} $M \times N = 40 \times 40$ grid ($1600$ tiles of $48 \times 27\text{ px}$).
+\end{enumerate}
+
+
+As shown in Figure~\ref{fig:t5_verification}, comparing the original plaintext $P$ and decrypted output $\mathrm{Dec}_K(\mathrm{Enc}_K(P))$ results in zero mismatched pixels and a Mean Squared Error of $\text{MSE} = 0.0$, confirming $100\%$ bit-exact recovery.
+
+
+\begin{figure}[H]
+    \centering
+    \begin{subfigure}[t]{0.31\textwidth}
+        \centering
+        \includegraphics[width=\textwidth, height=0.35\textheight, keepaspectratio]{figures/t5_restored.png}
+        \caption{Original image ($720 \times 1280$).}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[t]{0.31\textwidth}
+        \centering
+        \includegraphics[width=\textwidth, height=0.35\textheight, keepaspectratio]{figures/t5_scrambled.png}
+        \caption{Scrambled ($36 \times 40$ grid).}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[t]{0.31\textwidth}
+        \centering
+        \includegraphics[width=\textwidth, height=0.35\textheight, keepaspectratio]{figures/t5_restored.png}
+        \caption{Restored ($\text{MSE} = 0.0$).}
+    \end{subfigure}
+    \caption{Visual verification of GRT encryption and decryption on HD 720p ($36 \times 40$ grid, $1440$ tiles of $20 \times 32\text{ px}$).}
+    \label{fig:t5_verification}
+\end{figure}
+
+
+\subsection{Computational Latency \& Memory Overhead}
+
+\begin{table}[H]
+\centering
+\footnotesize
+\begin{tabularx}{\textwidth}{l c c c >{\centering\arraybackslash}X >{\centering\arraybackslash}X c c c}
+\toprule
+\textbf{Scenario} & \textbf{Padded Size} & \textbf{Grid} & \textbf{Tiles} & \textbf{$\mathrm{Enc}_K$ Time} & \textbf{$\mathrm{Dec}_K$ Time} & \textbf{Total} & \textbf{Raw / Peak RAM} & \textbf{Ratio} \\
+\midrule
+SD 480p & $480 \times 875$ & $30 \times 25$ & $750$ & $3.18 \pm 0.14\text{ ms}$ & $0.57 \pm 0.14\text{ ms}$ & $3.74\text{ ms}$ & $1230.5 / 2463.6\text{ KB}$ & $2.00\times$ \\
+HD 720p & $720 \times 1280$ & $36 \times 40$ & $1440$ & $7.32 \pm 0.81\text{ ms}$ & $1.11 \pm 0.06\text{ ms}$ & $8.43\text{ ms}$ & $2700.0 / 5405.4\text{ KB}$ & $2.00\times$ \\
+FHD 1080p & $1920 \times 1080$ & $40 \times 40$ & $1600$ & $15.13 \pm 1.16\text{ ms}$ & $2.72 \pm 0.28\text{ ms}$ & $17.84\text{ ms}$ & $6075.0 / 12162.0\text{ KB}$ & $2.00\times$ \\
+\bottomrule
+\end{tabularx}
+\caption{Encryption/decryption latency (Averagely over 30 independent runs) and memory overhead across SD, HD, and FHD resolutions.}
+\label{tab:latency_memory}
+\end{table}
+
+\begin{itemize}
+    \item \textbf{Server encryption:} takes $<15.13\text{ ms}$ ($\sim 100\text{ images/sec}$ per core).
+
+    \item \textbf{Client reconstruction:} takes $<2.72\text{ ms}$---consuming under $4\%$ of a $16.67\text{ ms}$, ensuring zero web lag.
+    
+    \item \textbf{Constant 2.00× Factor memory:} holds only the plaintext buffer $P$ and ciphertext buffer $C$ in memory at the same time, resulting in an exact $2.00\times$ peak memory ratio for all resolutions.
+\end{itemize}
+
+\subsection{Ciphertext Compression Overhead}
+\begin{table}[H]
+\centering
+\footnotesize
+\begin{tabularx}{\textwidth}{l c >{\centering\arraybackslash}X >{\centering\arraybackslash}X >{\centering\arraybackslash}X}
+\toprule
+\textbf{Scenario (Grid)} & \textbf{Tile Size} & \textbf{PNG ($P \to C$)} & \textbf{WebP ($P \to C$)} & \textbf{JPEG ($P \to C$)} \\
+\midrule
+SD 480p ($30 \times 25$) & $16 \times 35\text{ px}$ & $904.7 \to 918.4\text{ KB}$ (\textbf{+1.52\%}) & $604.0 \to 638.2\text{ KB}$ (\textbf{+5.65\%}) & $192.9 \to 202.5\text{ KB}$ (\textbf{+5.01\%}) \\
+HD 720p ($36 \times 40$) & $20 \times 32\text{ px}$ & $2047.4 \to 2066.9\text{ KB}$ (\textbf{+0.95\%}) & $1353.7 \to 1419.2\text{ KB}$ (\textbf{+4.83\%}) & $439.5 \to 470.0\text{ KB}$ (\textbf{+6.45\%}) \\
+FHD 1080p ($40 \times 40$, Tile GRT) & $48 \times 27\text{ px}$ & $3497.2 \to 3515.6\text{ KB}$ (\textbf{+0.52\%}) & $2291.8 \to 2450.4\text{ KB}$ (\textbf{+5.65\%}) & $641.2 \to 736.4\text{ KB}$ (\textbf{+6.65\%}) \\
+\midrule
+FHD 1080p (Pixel Shuffle) & $1 \times 1\text{ px}$ & $3497.2 \to 6070.1\text{ KB}$ (\textbf{+73.57\%}) & $2291.8 \to 5116.0\text{ KB}$ (\textbf{+123.23\%}) & $641.2 \to 1719.3\text{ KB}$ (\textbf{+168.12\%}) \\
+\bottomrule
+\end{tabularx}
+\caption{Ciphertext size expansion comparing tile-level GRT against full pixel-level permutation.}
+\label{tab:compression}
+\end{table}
+
+\noindent \textbf{Why Tile Transposition Preserves Compression as We Expected:} Shuffling individual pixels will turn an image into random-looking noise that image compressors cannot shrink. By permuting
+whole tiles (16 × 35 up to 48 × 27 px), pixels inside each tile stay together. Only the edges between adjacent tiles change, keeping the expansion between all three resolutions $< 7\%$.
+
+\section{Brute-Force Analysis \& Limitation}
+
+\begin{table}[H]
+\centering
+\footnotesize
+\begin{tabularx}{\textwidth}{l c >{\raggedright\arraybackslash}X}
+\toprule
+\textbf{} & \textbf{FHD with $40 \times 40$ Grid ($1,600$ tiles)} & \textbf{Cryptographic Implication} \\
+\midrule
+\textbf{Tile Permutation} & $1600! \approx 10^{4435}$ & Infeasible for brute-force. \\
+\addlinespace
+\textbf{Valid Key space} & $|\mathcal{K}| \approx 2.46 \times 10^9$ ($\le 40^6$) & Prevente blind guessing. \\
+\addlinespace
+\textbf{Known-Plaintext Attack Resistance} & $\mathcal{O}(1)$ solvable with 3 known tiles & GRT is a pure transposition cipher. \\
+\bottomrule
+\end{tabularx}
+\caption{Brute-force and cryptanalytic evaluation on a $40 \times 40$ FHD (Full HD image) grid.}
+\label{tab:bruteforce}
+\end{table}
+
+\begin{itemize}
+
+    \item \textbf{Limitations:} Because the image must eventually be rendered for the users, client-side decryption cannot prevent OS-level screenshots or manual inspection via browser DevTools. The system is designed to against automated bulk scraping.
+    
+\end{itemize}
+
+\section{Conclusion}
+By adapting the Generalized Rectangular Transform (\hyperref[sec:GRT]{GRT}) and its 4-stage inverse (\hyperref[sec:IGRT]{IGRT})~\cite{Lan2025ANM} from pixel-level encryption to tile-level web delivery, our system prevents automated HTTP image scraping while keeping compression overhead low. With the client-side reconstruction under $2.72\text{ ms}$, show that our system can operate at production speeds in web browsers.
+
+
+%-----------------------
 
 \newpage
+
+\begin{tcolorbox}[
+  colback=gray!5!white,
+  colframe=gray!60!black,
+  title=\textbf{Source Code \& Artifact Availability}
+]
+
+The full implementation and automated benchmark suite are publicly hosted on our group project GitHub repository:
+\begin{itemize}
+    \item \textbf{Repository URL:} \url{https://github.com/conca979/cryptography}
+    \item \textbf{Submission Commit:} \texttt{cc73099}
+    \item \textbf{Core Assets:} \texttt{grt\_server.py} (Python backend),\texttt{igrt\_client.js} (Client decoder) and ``benchmark/" folder (Experimental benchmark setup)
+\end{itemize}
+\end{tcolorbox}
+\label{artifact_box}
+
+
 \begin{thebibliography}{9}
+
+\bibitem{uzun2023scraping}
+E.~Uzun, ``Scraping Relevant Images from Web Pages without Download,'' \emph{ACM Transactions on the Web}, vol.~18, no.~1, Art.~no.~1, pp.~1--27, Oct. 2023. [Online]. Available: \url{https://doi.org/10.1145/3616849}
+
+\bibitem{shan2023glaze}
+S.~Shan, J.~Cryan, E.~Wenger, H.~Zheng, R.~Hanocka, and B.~Y. Zhao, ``Glaze: Protecting Artists from Style Mimicry by Text-to-Image Models,'' in \emph{Proc. 32nd USENIX Security Symposium (USENIX Security 23)}, Anaheim, CA, USA, 2023, pp. 2187--2204. Available: \url{https://www.usenix.org/conference/usenixsecurity23/presentation/shan}
+
 \bibitem{Lan2025ANM}
-Y.-C. Lan and C.-M. Wang,
-``A Novel Multi-Image Encryption Scheme Using
-Generalized Rectangular Transform and Advanced
-5-D Hyperchaotic Map,''
-\textit{IEEE Access}, vol. 13,
-pp. 43316--43337, 2025.
-doi: 10.1109/ACCESS.2025.3547891.
+J.~Lan and X.~Wang, ``Generalized Rectangular Transform and Its Application in Image Encryption,'' \emph{IEEE Access}, 2025. [Online]. Available: \url{https://ieeexplore.ieee.org/document/10909497}
+
+\bibitem{arnold1968}
+V.~I. Arnold and A.~Avez, \emph{Ergodic Problems of Classical Mechanics}. New York, NY, USA: Benjamin, 1968. [Online]. Available: \url{https://doi.org/10.1016/j.chaos.2003.12.022}
+
+\bibitem{salkowitz2026artists}
+R.~Salkowitz, ``Artists Built A Site To Escape AI. Scrapers Are Coming For It Anyway,'' \emph{Forbes}, Aug. 23, 2026. [Online]. Available: \url{https://www.forbes.com/sites/robsalkowitz/2026/08/23/artists-built-a-site-to-escape-ai-scrapers-are-coming-for-it-anyway/}
 
 \end{thebibliography}
 
