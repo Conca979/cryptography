@@ -2,6 +2,7 @@
 
 \usepackage{graphicx} % Required for inserting images
 \usepackage[top=2.5cm, bottom=2.5cm, left=2.5cm, right=2.5cm]{geometry}
+\usepackage{mathptmx} % Enforce Times New Roman font
 \usepackage{hyperref}
 \usepackage{amsmath}
 \usepackage{indentfirst}
@@ -336,7 +337,7 @@ whole tiles (16 × 35 up to 48 × 27 px), pixels inside each tile stay together.
 \midrule
 \textbf{Tile Permutation} & $1600! \approx 10^{4435}$ & Infeasible for brute-force. \\
 \addlinespace
-\textbf{Valid Key space} & $|\mathcal{K}| \approx 2.46 \times 10^9$ ($\le 40^6$) & Prevente blind guessing. \\
+\textbf{Valid Key space} & $|\mathcal{K}| \approx 2.46 \times 10^9$ ($\le 40^6$) & Prevents blind guessing. \\
 \addlinespace
 \textbf{Known-Plaintext Attack Resistance} & $\mathcal{O}(1)$ solvable with 3 known tiles & GRT is a pure transposition cipher. \\
 \bottomrule
@@ -346,13 +347,11 @@ whole tiles (16 × 35 up to 48 × 27 px), pixels inside each tile stay together.
 \end{table}
 
 \begin{itemize}
-
-    \item \textbf{Limitations:} Because the image must eventually be rendered for the users, client-side decryption cannot prevent OS-level screenshots or manual inspection via browser DevTools. The system is designed to against automated bulk scraping.
-    
+    \item \textbf{Limitations:} While the system effectively stops simple direct HTTP downloading of image files, claiming that it completely prevents automated scraping is inaccurate. Because decryption must occur on the client side, adversaries can still automate the extraction process---either by crawling the side-channel API to obtain the keys and decrypt the tiles programmatically, or by automating headless browser capture of the rendered canvas. Thus, the cipher raises the technical barrier rather than providing absolute immunity against automated scraping.
 \end{itemize}
 
 \section{Conclusion}
-By adapting the Generalized Rectangular Transform (\hyperref[sec:GRT]{GRT}) and its 4-stage inverse (\hyperref[sec:IGRT]{IGRT})~\cite{Lan2025ANM} from pixel-level encryption to tile-level web delivery, our system prevents automated HTTP image scraping while keeping compression overhead low. With the client-side reconstruction under $2.72\text{ ms}$, show that our system can operate at production speeds in web browsers.
+By adapting the Generalized Rectangular Transform (\hyperref[sec:GRT]{GRT}) and its 4-stage inverse (\hyperref[sec:IGRT]{IGRT})~\cite{Lan2025ANM} from pixel-level encryption to tile-level web delivery, our system effectively impedes simple automated HTTP image scraping while keeping compression overhead low ($< 7\%$). With the client-side reconstruction under $2.72\text{ ms}$, our benchmark shows that the system can operate smoothly at production speeds in web browsers.
 
 
 %-----------------------
