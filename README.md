@@ -1,11 +1,11 @@
-> The course report source is [`report.tex`](report.tex) and [`report.pdf`](report.pdf). To compile it, the images it references must be present in the [`figures/`](figures/) folder. Upload the corresponding files from `figures/` before building.
+> The course report is [`report.tex`](report.tex) and [`report.pdf`](report.pdf). To compile it upload the corresponding files from `figures/`.
 
-# Project Structure and File Index
+# Project File Index
 
-Course project for Introduction to Cryptography. The system protects web images against automated scraping by permuting image tiles with the Generalized Rectangular Transform (GRT) on the server and restoring them in the browser with its 4-stage inverse (IGRT).
+Course project for Introduction to Cryptography. The system protects web images against automated scraping by a symmetric permutation cryptosystem. Generalized Rectangular Transform (GRT) performs encryption on the server and inverse GRT (IGRT) doing decryption (plaintext recovery) on the client-side.
 
-- Encryption: `src/cryptography/grt_server.py` (Python)
-- Decryption: `src/cryptography/igrt_client.js` (JavaScript, HTML5 Canvas)
+- Encryption: `src/cryptography/grt_server.py`
+- Decryption: `src/cryptography/igrt_client.js`
 
 Requirements: Python 3.10, [`uv`](https://docs.astral.sh/uv/), and Node.js (only for the benchmark notebooks, which run the client decoder).
 
@@ -26,13 +26,14 @@ The notebooks in `benchmark/` reproduce the experimental tables of the report. R
 | `03_compression.ipynb` | PNG, WebP and JPEG size overhead, including a pixel-level shuffle baseline |
 | `04_t5_visual_verification.ipynb` | Regenerates the scrambled and restored `t5` images and verifies lossless recovery |
 
-Results are summarized in `benchmark/benchmark.md` and saved as JSON in `benchmark/results/`.
+Results are saved as JSON in `benchmark/results/`.
 
 ## Repository Layout
 
 ```
 .
 ├── report.tex                      Course report (LaTeX)
+├── report.pdf                      Course report (pdf)
 ├── figures/                        Figures used by report.tex
 ├── pyproject.toml, uv.lock         Python dependencies
 ├── src/cryptography/
@@ -41,12 +42,8 @@ Results are summarized in `benchmark/benchmark.md` and saved as JSON in `benchma
 │   └── main.ipynb                  Interactive demo
 ├── benchmark/                      Benchmark notebooks, summary, and results
 └── docs/
-    ├── benchmark_report.md         Earlier benchmark write-up
-    ├── references.md               Bibliography
-    ├── srt_and_grt_handwritten_notes.md   SRT and GRT derivation notes
     ├── diagrams/                   Draw.io sources and PDF exports (architecture, IGRT stages)
-    ├── images/                     Test images and generated scrambled or restored outputs
-    └── papers/                     Reference papers (PDF)
+    └── images/                     Test images and generated scrambled or restored outputs
 ```
 
 ## Test Images
