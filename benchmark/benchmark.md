@@ -1,13 +1,11 @@
-# Benchmark
-
 ## Setup
 
 | Item | Value |
 | --- | --- |
-| Server | Python 3.10, Pillow, NumPy, `src/cryptography/grt_server.py` (`scramble_image_grt`) |
-| Client | Node.js v22 (V8), `src/cryptography/igrt_client.js` (`descrambleBuffer32IGRT`) |
+| Server | Python 3.10, Pillow, NumPy |
+| Client | Node.js v22 (V8) |
 | Runs | 5 warmup, 30 measured iterations (`WARMUP`, `ITERS`) |
-| Keys | Fixed seed (`SEED = 2026`), validated with `validate_grt_parameters` |
+| Keys | Fixed seed (`SEED = 2026`) |
 
 | Scenario | Image | Resolution | Grid (M x N) | Padded size | Tile size | Tiles |
 | --- | --- | --- | --- | --- | --- | --- |
@@ -15,7 +13,7 @@
 | HD 720p | `docs/images/t5_HD_720p.png` | 720 x 1280 | 36 x 40 | 720 x 1280 | 20 x 32 | 1440 |
 | FHD 1080p | `docs/images/t2_FHD_1080p.png` | 1920 x 1080 | 40 x 40 | 1920 x 1080 | 48 x 27 | 1600 |
 
-The SD image height (854) is not divisible by 25, so it is padded by edge replication to 875 before tiling. The padded image is used as the baseline in all tables, so reported overheads come from scrambling only.
+The SD image height (854) is not divisible by 25, so it is padded to 875 before tiling.
 
 ## Notebooks
 
@@ -57,6 +55,5 @@ Each notebook has a configuration cell (`SCENARIOS`, `WARMUP`, `ITERS`, `SEED`) 
 
 ## Notes
 
-- Latency varies by machine and load; rerun `01_latency.ipynb` to refresh. Memory and compression values are deterministic for a fixed seed.
+- Latency varies by machine. Memory and compression values are deterministic for a fixed seed.
 - Client latency is measured in Node.js V8 on the raw 32-bit buffer, excluding image decoding and Canvas painting.
-- Section 4 of `report.tex` is synchronized with these tables and the 36 x 40 `t5` grid caption.
