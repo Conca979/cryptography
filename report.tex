@@ -71,7 +71,7 @@
     \textbf{Nguyen Tung Duong }& 23BA14076 & ICT \\
     Tran Mai Anh & 2410093 & ICT \\
     Pham Dinh Anh Duong & 23BA14075 & ICT \\
-    Ta Quang Huy & 23BA14037 & ICT \\
+    Ta Quang Huy & 23BA14137 & ICT \\
     Ha Dang Huy & 23BA14138 & ICT \\
     Nguyen Minh Duc & 23BA14056 & ICT \\
     Nguyen Minh Luong & 23BA14184 & ICT \\
@@ -222,7 +222,7 @@ The  cryptographic pipeline executes five stages across the server and client:
 \begin{enumerate}\setlength{\itemsep}{1pt}\setlength{\parskip}{0pt}
     \item \textbf{Padding:} If the source image dimensions $(W_0, H_0)$ are not divisible by $(M, N)$, the server will pad the outer edges until every tile is identical in size.
     \item \textbf{Key Generation:} The server generates a secret key $K = (a, b, c, d, r_m, r_n)$ satisfying \hyperref[4_conditions]{4 conditions}.
-    \item \textbf{Encryption (Forward GRT):} Plaintext tiles at $(x, y)_n$ is mapped to its ciphertext coordinate $(x, y)_{n+1}$ via the affine transformation in Eq.~(\hyperref[eq:grt]{2}).
+    \item \textbf{Encryption (Forward GRT):} Each Plaintext tiles at $(x, y)_n$ is mapped to its ciphertext coordinate $(x, y)_{n+1}$ via the affine transformation in Eq.~(\hyperref[eq:grt]{2}).
     \item \textbf{Decryption Precomputation:} Upon receiving secret key $K$, the client evaluates the 4-stage IGRT corollary (Figure~\ref{fig:igrt_4stages}) once per axis, storing the inverse mapping in 1D lookup tables in $\mathcal{O}(M+N)$ time.
     \item \textbf{Decryption (Plaintext Recovery):} The client applies the inverse permutation to restore all tiles to their original coordinates and crops the image back to $(W_0, H_0)$, satisfying $\mathrm{Dec}_K(\mathrm{Enc}_K(P)) = P$.
 \end{enumerate}
@@ -291,7 +291,7 @@ HD 720p & $720 \times 1280$ & $36 \times 40$ & $1440$ & $7.32 \pm 0.81\text{ ms}
 FHD 1080p & $1920 \times 1080$ & $40 \times 40$ & $1600$ & $15.13 \pm 1.16\text{ ms}$ & $2.72 \pm 0.28\text{ ms}$ & $17.84\text{ ms}$ & $6075.0 / 12162.0\text{ KB}$ & $2.00\times$ \\
 \bottomrule
 \end{tabularx}
-\caption{Encryption/decryption latency (Averagely over 30 independent runs) and memory overhead across SD, HD, and FHD resolutions.}
+\caption{Encryption/decryption latency (Averaged over 30 independent runs) and memory overhead across SD, HD, and FHD resolutions.}
 \label{tab:latency_memory}
 \end{table}
 
@@ -336,18 +336,18 @@ whole tiles (16 × 35 up to 48 × 27 px), pixels inside each tile stay together.
 \midrule
 \textbf{Tile Permutation} & $1600! \approx 10^{4435}$ & Infeasible for brute-force. \\
 \addlinespace
-\textbf{Valid Key space} & $|\mathcal{K}| \approx 2.46 \times 10^9$ ($\le 40^6$) & Prevente blind guessing. \\
+\textbf{Valid Key space} & $|\mathcal{K}| \approx 2.46 \times 10^9$ ($\le 40^6$) & Prevent blind guessing. \\
 \addlinespace
 \textbf{Known-Plaintext Attack Resistance} & $\mathcal{O}(1)$ solvable with 3 known tiles & GRT is a pure transposition cipher. \\
 \bottomrule
 \end{tabularx}
-\caption{Brute-force and cryptanalytic evaluation on a $40 \times 40$ FHD (Full HD image) grid.}
+\caption{Brute-force and cryptanalytic evaluation on a $40 \times 40$ FHD grid.}
 \label{tab:bruteforce}
 \end{table}
 
 \begin{itemize}
 
-    \item \textbf{Limitations:} Because the image must eventually be rendered for the users, client-side decryption cannot prevent OS-level screenshots or manual inspection via browser DevTools. The system is designed to against automated bulk scraping.
+    \item \textbf{Limitations:} Because the image must eventually be rendered on the client side, the system cannot prevent OS-level screenshots, headless browser capture, or manual inspection via browser DevTools. Instead, it is designed specifically to prevent direct HTTP bulk scraping and raise the technical cost of automated extraction.
     
 \end{itemize}
 
@@ -368,7 +368,7 @@ By adapting the Generalized Rectangular Transform (\hyperref[sec:GRT]{GRT}) and 
 The full implementation and automated benchmark suite are publicly hosted on our group project GitHub repository:
 \begin{itemize}
     \item \textbf{Repository URL:} \url{https://github.com/conca979/cryptography}
-    \item \textbf{Submission Commit:} \texttt{cc73099}
+    \item \textbf{Submission Commit:} \texttt{76cde7e}
     \item \textbf{Core Assets:} \texttt{grt\_server.py} (Python backend),\texttt{igrt\_client.js} (Client decoder) and ``benchmark/" folder (Experimental benchmark setup)
 \end{itemize}
 \end{tcolorbox}
